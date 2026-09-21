@@ -1,0 +1,84 @@
+import http from 'node:http';
+import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
+import { config } from './config.js';
+import { ensureRoles, checkConfiguration } from './roles.js';
+import { registerCommands } from './register-commands.js';
+import {
+  sendWelcomeDM,
+  startOnboarding,
+  handleOnboardingInteraction,
+  handleProfileCommand,
+  handleValidationButton,
+  handleModeratorModal,
+  handleClarificationButton,
+  handleClarificationReplyModal
+} from './workflow.js';
+
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.DirectMessages],
+  partials: [Partials.Channel]
+});
+
+let roles;
+
+client.once(Events.ClientReady, async (readyClient) => {
+  console.log(`[bot] connecté comme ${readyClient.user.tag}`);
+  const guild = await readyClient.guilds.fetch(config.guildId);
+  await guild.members.fetchMe();
+  roles = await ensureRoles(guild);
+  await checkConfiguration(guild, roles);
+  if (config.registerCommandsOnStart) await registerCommands();
+});
+
+client.on(Events.GuildMemberAdd, async (member) => {
+  if (member.guild.id !== config.guildId || member.user.bot) return;
+  try { await sendWelcomeDM(member, roles); } catch (error) { console.error('[join]', error); }
+});
+
+client.on(Events.InteractionCreate, async (interaction) => {
+  try {
+    if (interaction.isChatInputCommand()) {
+      if (interaction.commandName === 'commencer') return startOnboarding(interaction, roles);
+      if (interaction.commandName === 'profil') return handleProfileCommand(interaction);
+    }
+
+    if ((interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith('onboard:')) {
+      return handleOnboardingInteraction(interaction);
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith('validation:')) {
+      return handleValidationButton(interaction, roles);
+    }
+
+    if (interaction.isModalSubmit() && (interaction.customId.startsWith('reject_modal:') || interaction.customId.startsWith('clarify_modal:'))) {
+      return handleModeratorModal(interaction);
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith('clarify_reply:')) {
+      return handleClarificationButton(interaction);
+    }
+
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('clarify_reply_modal:')) {
+      return handleClarificationReplyModal(interaction);
+    }
+  } catch (error) {
+    console.error('[interaction]', error);
+    const payload = { content: 'Une erreur est survenue. Réessaie ou contacte un modérateur.', ephemeral: true };
+    if (interaction.isRepliable()) {
+      if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+      else await interaction.reply(payload).catch(() => {});
+    }
+  }
+});
+
+http.createServer((req, res) => {
+  if (req.url === '/health') {
+    res.writeHead(client.isReady() ? 200 : 503, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ ok: client.isReady(), bot: client.user?.tag ?? null }));
+    return;
+  }
+  res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+  res.end('Cage & Key Discord Bot');
+}).listen(config.port, '0.0.0.0', () => console.log(`[http] healthcheck sur :${config.port}`));
+
+client.login(config.token);
