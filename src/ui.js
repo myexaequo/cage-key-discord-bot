@@ -8,6 +8,7 @@ import {
   StringSelectMenuOptionBuilder
 } from 'discord.js';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { OPTIONS } from './questions.js';
 import { t, label, labels } from './i18n.js';
@@ -33,8 +34,9 @@ export function languageScreen() {
 }
 
 export function welcomePayload() {
-  const attachment = new AttachmentBuilder(welcomeGifPath, { name: 'cage-key-welcome.gif' });
   const base = languageScreen();
+  if (!fs.existsSync(welcomeGifPath)) return base;
+  const attachment = new AttachmentBuilder(welcomeGifPath, { name: 'cage-key-welcome.gif' });
   base.embeds[0].setImage('attachment://cage-key-welcome.gif');
   return { ...base, files: [attachment] };
 }
@@ -115,7 +117,9 @@ export function validationPayload(user, application) {
 
 export function acceptedPayload(lang) {
   const s = t(lang);
+  const embed = new EmbedBuilder().setTitle(`🔓 ${s.accepted}`).setDescription(s.acceptedBody);
+  if (!fs.existsSync(unlockGifPath)) return { embeds: [embed] };
   const attachment = new AttachmentBuilder(unlockGifPath, { name: 'cage-key-unlock.gif' });
-  const embed = new EmbedBuilder().setTitle(`🔓 ${s.accepted}`).setDescription(s.acceptedBody).setImage('attachment://cage-key-unlock.gif');
+  embed.setImage('attachment://cage-key-unlock.gif');
   return { embeds: [embed], files: [attachment] };
 }
