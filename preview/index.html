@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cage & Key — Preview du bot</title>
+  <link rel="stylesheet" href="/preview/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="server-rail" aria-label="Serveurs">
+      <div class="server-icon active">C&K</div>
+      <div class="server-icon muted">+</div>
+    </aside>
+
+    <aside class="channel-rail">
+      <div class="server-name">Cage & Key <span>⌄</span></div>
+      <div class="channel-scroll">
+        <div class="category"><span>ACCUEIL</span><span>+</span></div>
+        <div class="channel active"><span>#</span> bienvenue</div>
+        <div class="channel"><span>#</span> règlement</div>
+
+        <div class="category locked-cat"><span>FRANÇAIS</span><span>🔒</span></div>
+        <div class="channel locked"><span>#</span> général-fr</div>
+        <div class="channel locked"><span>#</span> discussions-fr</div>
+
+        <div class="category locked-cat"><span>NEDERLANDS</span><span>🔒</span></div>
+        <div class="channel locked"><span>#</span> algemeen-nl</div>
+
+        <div class="category locked-cat"><span>ENGLISH</span><span>🔒</span></div>
+        <div class="channel locked"><span>#</span> general-en</div>
+      </div>
+      <div class="user-bar">
+        <div class="avatar">M</div>
+        <div><strong>Mathieu</strong><small>En attente</small></div>
+        <span class="gear">⚙</span>
+      </div>
+    </aside>
+
+    <main class="chat-area">
+      <header class="chat-header">
+        <div><strong># bienvenue</strong><span class="sep">|</span><span class="topic">Inscription Cage & Key</span></div>
+        <div class="preview-switches">
+          <button class="tiny active" data-view="member">Vue membre</button>
+          <button class="tiny" data-view="moderator">#validation</button>
+        </div>
+      </header>
+
+      <section class="messages" id="memberView">
+        <div class="system-note">Ceci est une prévisualisation locale. Aucune action n'est envoyée à Discord.</div>
+        <article class="message bot-message">
+          <div class="bot-avatar">K</div>
+          <div class="message-body">
+            <div class="author-line"><strong>Cage & Key</strong><span class="bot-tag">BOT</span><time>aujourd’hui à 19:12</time></div>
+            <div id="botContent"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="messages hidden" id="moderatorView">
+        <div class="system-note">Simulation du canal privé <strong>#validation</strong>.</div>
+        <article class="message bot-message">
+          <div class="bot-avatar">K</div>
+          <div class="message-body">
+            <div class="author-line"><strong>Cage & Key</strong><span class="bot-tag">BOT</span><time>aujourd’hui à 19:14</time></div>
+            <div id="validationContent"></div>
+          </div>
+        </article>
+      </section>
+
+      <footer class="chat-input-wrap">
+        <div class="chat-input">Message #bienvenue <span>☺︎</span></div>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module" src="/preview/app.js"></script>
+</body>
+</html>
