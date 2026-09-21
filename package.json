@@ -1,0 +1,20 @@
+{
+  "name": "cage-key-discord-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bot Discord d'accueil, validation et profils pour Cage & Key",
+  "engines": {
+    "node": ">=24.17.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/index.js",
+    "register": "node --env-file-if-exists=.env src/register-commands.js",
+    "test": "node --test",
+    "check": "node --check src/index.js && node --check src/workflow.js && node --check src/db.js",
+    "preview": "node --env-file-if-exists=.env src/preview-server.js"
+  },
+  "dependencies": {
+    "discord.js": "14.27.0"
+  }
+}
