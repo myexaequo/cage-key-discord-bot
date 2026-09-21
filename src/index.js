@@ -23,11 +23,26 @@ let roles;
 
 client.once(Events.ClientReady, async (readyClient) => {
   console.log(`[bot] connecté comme ${readyClient.user.tag}`);
-  const guild = await readyClient.guilds.fetch(config.guildId);
-  await guild.members.fetchMe();
-  roles = await ensureRoles(guild);
-  await checkConfiguration(guild, roles);
-  if (config.registerCommandsOnStart) await registerCommands();
+
+  // Enregistrer les slash commands indépendamment de la configuration des rôles.
+  // Ainsi /commencer et /profil restent disponibles même si un rôle ou une permission
+  // du serveur doit encore être corrigé.
+  if (config.registerCommandsOnStart) {
+    try {
+      await registerCommands();
+    } catch (error) {
+      console.error('[commands] échec de l’enregistrement des commandes', error);
+    }
+  }
+
+  try {
+    const guild = await readyClient.guilds.fetch(config.guildId);
+    await guild.members.fetchMe();
+    roles = await ensureRoles(guild);
+    await checkConfiguration(guild, roles);
+  } catch (error) {
+    console.error('[setup] erreur de configuration du serveur', error);
+  }
 });
 
 client.on(Events.GuildMemberAdd, async (member) => {
