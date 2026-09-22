@@ -41,9 +41,15 @@ client.once(Events.ClientReady, async (readyClient) => {
     const guild = await readyClient.guilds.fetch(config.guildId);
     const botMember = await guild.members.fetchMe();
 
-    if (botMember.nickname !== 'C&K Bot') {
-      await botMember.setNickname('C&K Bot', 'Nom du bot Cage & Key');
-      console.log('[setup] surnom du bot défini sur C&K Bot');
+    // Le changement de surnom est purement cosmétique et ne doit jamais bloquer
+    // l'initialisation du bot si Discord refuse la permission.
+    try {
+      if (botMember.nickname !== 'C&K Bot') {
+        await botMember.setNickname('C&K Bot', 'Nom du bot Cage & Key');
+        console.log('[setup] surnom du bot défini sur C&K Bot');
+      }
+    } catch (nicknameError) {
+      console.warn('[setup] impossible de changer le surnom du bot; poursuite du démarrage', nicknameError);
     }
 
     roles = await ensureRoles(guild);
