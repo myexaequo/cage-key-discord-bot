@@ -123,6 +123,20 @@ export async function handleProfileCommand(interaction) {
   return interaction.reply({ embeds: [profileEmbed(target, profile, profile.language)] });
 }
 
+export async function handleProfileContextMenu(interaction) {
+  const canViewProfiles = isStaff(interaction.member) || interaction.member.roles.cache.some((r) => r.name === 'Membre');
+  if (!canViewProfiles) return ephemeralReply(interaction, { content: 'Les profils sont accessibles après validation de ton accès.' });
+
+  const target = interaction.targetUser;
+  const profile = getProfile(config.guildId, target.id);
+  if (!profile) return ephemeralReply(interaction, { content: t('fr').profileNotFound });
+
+  return interaction.reply({
+    embeds: [profileEmbed(target, profile, profile.language)],
+    ephemeral: true
+  });
+}
+
 function ensureStaff(interaction) {
   if (isStaff(interaction.member)) return true;
   ephemeralReply(interaction, { content: 'Action réservée aux modérateurs.' });
