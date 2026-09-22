@@ -187,7 +187,7 @@ export async function handleValidationButton(interaction, roles) {
     } catch (error) {
       console.error('[validation:accept] attribution des rôles impossible', error);
       return interaction.followUp({
-        content: 'Impossible d’attribuer les rôles. Vérifie que le rôle **Cage & Key** est placé au-dessus de **En attente**, **Membre**, **FR**, **NL** et **EN** dans Paramètres du serveur → Rôles.',
+        content: 'Impossible d’attribuer les rôles. Vérifie que le rôle **Cage & Key** est placé au-dessus de **tous les rôles gérés par le bot** (En attente, Membre, FR/NL/EN et rôles de profil) dans Paramètres du serveur → Rôles.',
         ephemeral: true
       });
     }
