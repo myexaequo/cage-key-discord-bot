@@ -138,21 +138,9 @@ async function fetchApplicationMember(interaction, userId) {
 export async function handleValidationButton(interaction, roles) {
   if (!ensureStaff(interaction)) return;
   const [, action, userId] = interaction.customId.split(':');
-  const { app, member } = await fetchApplicationMember(interaction, userId);
-  if (!app || app.status !== 'submitted') return ephemeralReply(interaction, { content: 'Cette demande n’est plus active.' });
 
-  if (action === 'accept') {
-    if (!member) return ephemeralReply(interaction, { content: 'Le membre n’est plus sur le serveur.' });
-    await approveMember(member, roles, app.language);
-    saveProfileFromApplication(app, interaction.user.id);
-    audit(config.guildId, 'application_approved', { userId, actorId: interaction.user.id });
-    await interaction.update({ content: `✅ Accepté par <@${interaction.user.id}>`, embeds: interaction.message.embeds, components: [] });
-    await member.send(acceptedPayload(app.language)).catch(() => {});
-    deleteApplication(config.guildId, userId);
-    await sendLog(interaction.client, `✅ <@${userId}> accepté par <@${interaction.user.id}>.`);
-    return;
-  }
-
+  // Les modales doivent être ouvertes immédiatement, sans attendre un fetch Discord.
+  // La validité de la demande est revérifiée au moment de l'envoi de la modale.
   if (action === 'reject') {
     const modal = new ModalBuilder().setCustomId(`reject_modal:${userId}`).setTitle('Refuser la demande');
     const input = new TextInputBuilder().setCustomId('reason').setLabel('Raison du refus').setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(1000);
@@ -165,6 +153,38 @@ export async function handleValidationButton(interaction, roles) {
     const input = new TextInputBuilder().setCustomId('question').setLabel('Question à envoyer au membre').setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(1000);
     modal.addComponents(new ActionRowBuilder().addComponents(input));
     return interaction.showModal(modal);
+  }
+
+  if (action === 'accept') {
+    // Discord attend une réponse en ~3 secondes. On acquitte le clic tout de suite
+    // avant les appels réseau et les changements de rôles.
+    await interaction.deferUpdate();
+
+    const { app, member } = await fetchApplicationMember(interaction, userId);
+    if (!app || app.status !== 'submitted') {
+      return interaction.followUp({ content: 'Cette demande n’est plus active.', ephemeral: true });
+    }
+    if (!member) {
+      return interaction.followUp({ content: 'Le membre n’est plus sur le serveur.', ephemeral: true });
+    }
+
+    try {
+      await approveMember(member, roles, app.language);
+    } catch (error) {
+      console.error('[validation:accept] attribution des rôles impossible', error);
+      return interaction.followUp({
+        content: 'Impossible d’attribuer les rôles. Vérifie que le rôle **Cage & Key** est placé au-dessus de **En attente**, **Membre**, **FR**, **NL** et **EN** dans Paramètres du serveur → Rôles.',
+        ephemeral: true
+      });
+    }
+
+    saveProfileFromApplication(app, interaction.user.id);
+    audit(config.guildId, 'application_approved', { userId, actorId: interaction.user.id });
+    await interaction.editReply({ content: `✅ Accepté par <@${interaction.user.id}>`, embeds: interaction.message.embeds, components: [] });
+    await member.send(acceptedPayload(app.language)).catch(() => {});
+    deleteApplication(config.guildId, userId);
+    await sendLog(interaction.client, `✅ <@${userId}> accepté par <@${interaction.user.id}>.`);
+    return;
   }
 }
 
