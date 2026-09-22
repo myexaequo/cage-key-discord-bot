@@ -183,7 +183,7 @@ export async function handleValidationButton(interaction, roles) {
     }
 
     try {
-      await approveMember(member, roles, app.language);
+      await approveMember(member, roles, app);
     } catch (error) {
       console.error('[validation:accept] attribution des rôles impossible', error);
       return interaction.followUp({
