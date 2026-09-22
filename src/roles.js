@@ -1,6 +1,6 @@
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { config } from './config.js';
-import { allProfileRoleNames, roleNamesForApplication } from './profile-roles.js';
+import { allProfileRoleNames, roleNamesForApplication, roleNamesForProfile } from './profile-roles.js';
 
 export const ROLE_NAMES = Object.freeze({
   pending: 'En attente',
@@ -118,4 +118,45 @@ export async function checkConfiguration(guild, roles) {
       console.warn(`[setup] catégorie ${lang.toUpperCase()}: vérifie les permissions (refuser Voir le salon à @everyone et l’autoriser au rôle ${lang.toUpperCase()}).`);
     }
   }
+}
+
+
+export async function syncExistingProfileRoles(guild, roles, profiles) {
+  let synced = 0;
+  let skipped = 0;
+
+  for (const profile of profiles) {
+    const member = await guild.members.fetch(profile.user_id).catch(() => null);
+    if (!member) {
+      skipped += 1;
+      continue;
+    }
+
+    const languageRole = roles[profile.language];
+    const profileRoleNames = roleNamesForProfile(profile);
+    const profileRoles = profileRoleNames
+      .map((name) => roles.profileByName.get(name))
+      .filter(Boolean);
+
+    const toAdd = [...new Map(
+      [roles.member, languageRole, ...profileRoles]
+        .filter(Boolean)
+        .map((role) => [role.id, role])
+    ).values()]
+      .filter((role) => !member.roles.cache.has(role.id));
+
+    if (toAdd.length) {
+      await member.roles.add(toAdd, 'Synchronisation des profils Cage & Key existants');
+    }
+
+    if (member.roles.cache.has(roles.pending.id)) {
+      await member.roles.remove(roles.pending, 'Profil Cage & Key déjà validé').catch(() => {});
+    }
+
+    synced += 1;
+    console.log(`[roles] profil existant synchronisé: ${member.user.tag} -> ${profileRoleNames.join(', ')}`);
+  }
+
+  console.log(`[roles] synchronisation terminée: ${synced} profil(s), ${skipped} absent(s) du serveur.`);
+  return { synced, skipped };
 }
