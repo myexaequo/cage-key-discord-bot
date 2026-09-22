@@ -115,7 +115,7 @@ export async function handleOnboardingInteraction(interaction) {
 }
 
 export async function handleProfileCommand(interaction) {
-  const canViewProfiles = isStaff(interaction.member) || interaction.member.roles.cache.some((r) => r.name === 'Membre');
+  const canViewProfiles = isStaff(interaction.member) || interaction.member.roles.cache.some((r) => r.name === 'Membre' || r.name === '✅ Membre');
   if (!canViewProfiles) return ephemeralReply(interaction, { content: 'Les profils sont accessibles après validation de ton accès.' });
   const target = interaction.options.getUser('membre') ?? interaction.user;
   const profile = getProfile(config.guildId, target.id);
@@ -124,7 +124,7 @@ export async function handleProfileCommand(interaction) {
 }
 
 export async function handleProfileContextMenu(interaction) {
-  const canViewProfiles = isStaff(interaction.member) || interaction.member.roles.cache.some((r) => r.name === 'Membre');
+  const canViewProfiles = isStaff(interaction.member) || interaction.member.roles.cache.some((r) => r.name === 'Membre' || r.name === '✅ Membre');
   if (!canViewProfiles) return ephemeralReply(interaction, { content: 'Les profils sont accessibles après validation de ton accès.' });
 
   const target = interaction.targetUser;
