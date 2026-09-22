@@ -8,6 +8,7 @@ import {
   startOnboarding,
   handleOnboardingInteraction,
   handleProfileCommand,
+  handleProfileContextMenu,
   handleValidationButton,
   handleModeratorModal,
   handleClarificationButton,
@@ -55,6 +56,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isChatInputCommand()) {
       if (interaction.commandName === 'commencer') return startOnboarding(interaction, roles);
       if (interaction.commandName === 'profil') return handleProfileCommand(interaction);
+    }
+
+    if (interaction.isUserContextMenuCommand() && interaction.commandName === 'Profil Cage & Key') {
+      return handleProfileContextMenu(interaction);
     }
 
     if ((interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith('onboard:')) {
