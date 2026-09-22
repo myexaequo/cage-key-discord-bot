@@ -289,9 +289,9 @@ const PROFILE_ROLE_EMOJIS = Object.freeze({
 
   // Rôle Cage & Key
   'Keyholder': '🗝️', 'Locked': '🔒', 'Switch': '🔄',
-  'Curieux·se / pas encore défini': '👀',
-  'Nieuwsgierig / nog niet bepaald': '👀',
-  'Curious / not defined yet': '👀',
+  'Curieux·se / pas encore défini': '👀 Rôle :',
+  'Nieuwsgierig / nog niet bepaald': '👀 Rol :',
+  'Curious / not defined yet': '👀 Role:',
 
   // Dispositifs
   'Cage plate': '⬛', 'Platte kooi': '⬛', 'Flat cage': '⬛',
@@ -301,7 +301,7 @@ const PROFILE_ROLE_EMOJIS = Object.freeze({
   'Cage en métal': '⛓️', 'Metalen kooi': '⛓️', 'Metal cage': '⛓️',
   'Cage en silicone': '💧', 'Siliconen kooi': '💧', 'Silicone cage': '💧',
   'Ceinture de chasteté': '🔐', 'Kuisheidsgordel': '🔐', 'Chastity belt': '🔐',
-  'Je n’en utilise pas encore': '🕊️', 'Ik gebruik er nog geen': '🕊️', 'I don’t use one yet': '🕊️',
+  'Je n’en utilise pas encore': '🕊️ Dispositif :', 'Ik gebruik er nog geen': '🕊️ Apparaat :', 'I don’t use one yet': '🕊️ Device:',
   'Autre dispositif': '❓', 'Ander apparaat': '❓', 'Other device': '❓',
 
   // Gestion des clés
