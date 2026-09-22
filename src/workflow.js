@@ -17,7 +17,8 @@ import { assignPending, approveMember, isStaff } from './roles.js';
 import { sendLog } from './logging.js';
 
 function ephemeralReply(interaction, payload) {
-  if (interaction.replied || interaction.deferred) return interaction.followUp({ ...payload, ephemeral: true });
+  if (interaction.deferred && !interaction.replied) return interaction.editReply(payload);
+  if (interaction.replied) return interaction.followUp({ ...payload, ephemeral: true });
   return interaction.reply({ ...payload, ephemeral: true });
 }
 
@@ -31,6 +32,11 @@ async function showCurrent(interaction, application) {
 
 export async function startOnboarding(interaction, roles) {
   if (!interaction.guild || interaction.guild.id !== config.guildId) return;
+
+  // Acquitter immédiatement la commande pour éviter le timeout Discord (~3 s),
+  // même si l'attribution du rôle ou un appel Discord prend plus de temps.
+  await interaction.deferReply({ ephemeral: true });
+
   const member = interaction.member;
   const existingProfile = getProfile(config.guildId, interaction.user.id);
   if (existingProfile) return ephemeralReply(interaction, { content: 'Ton profil est déjà validé. Utilise /profil pour le consulter.' });
