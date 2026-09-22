@@ -126,6 +126,15 @@ export function getProfile(guildId, userId) {
   };
 }
 
+export function listProfiles(guildId) {
+  return db.prepare('SELECT * FROM profiles WHERE guild_id = ? ORDER BY approved_at ASC').all(guildId).map((row) => ({
+    ...row,
+    devices: parseJson(row.devices_json, []),
+    keys: parseJson(row.keys_json, []),
+    kinks: parseJson(row.kinks_json, [])
+  }));
+}
+
 export function createClarification(guildId, userId, requestedBy, question) {
   const result = db.prepare(`INSERT INTO clarifications (guild_id,user_id,requested_by,question,created_at) VALUES (?,?,?,?,?)`)
     .run(guildId, userId, requestedBy, question, now());
