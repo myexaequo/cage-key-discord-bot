@@ -58,6 +58,16 @@ CREATE TABLE IF NOT EXISTS audit_log (
   details_json TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL
 ) STRICT;
+
+
+CREATE TABLE IF NOT EXISTS role_mappings (
+  guild_id TEXT NOT NULL,
+  mapping_key TEXT NOT NULL,
+  role_id TEXT NOT NULL,
+  canonical_name TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (guild_id, mapping_key)
+) STRICT;
 `);
 
 const now = () => new Date().toISOString();
@@ -157,6 +167,28 @@ export function audit(guildId, event, { userId = null, actorId = null, details =
 
 export function listRecentAudit(limit = 50) {
   return db.prepare('SELECT * FROM audit_log ORDER BY id DESC LIMIT ?').all(limit);
+}
+
+export function getRoleMapping(guildId, mappingKey) {
+  return db.prepare('SELECT * FROM role_mappings WHERE guild_id = ? AND mapping_key = ?')
+    .get(guildId, mappingKey) ?? null;
+}
+
+export function setRoleMapping(guildId, mappingKey, roleId, canonicalName) {
+  const ts = now();
+  db.prepare(`
+    INSERT INTO role_mappings (guild_id, mapping_key, role_id, canonical_name, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(guild_id, mapping_key) DO UPDATE SET
+      role_id = excluded.role_id,
+      canonical_name = excluded.canonical_name,
+      updated_at = excluded.updated_at
+  `).run(guildId, mappingKey, roleId, canonicalName, ts);
+  return getRoleMapping(guildId, mappingKey);
+}
+
+export function listRoleMappings(guildId) {
+  return db.prepare('SELECT * FROM role_mappings WHERE guild_id = ? ORDER BY mapping_key ASC').all(guildId);
 }
 
 export { db };
