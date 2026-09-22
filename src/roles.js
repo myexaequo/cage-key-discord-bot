@@ -1,6 +1,7 @@
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { config } from './config.js';
 import { allProfileRoleNames, roleNamesForApplication, roleNamesForProfile } from './profile-roles.js';
+import { getRoleMapping, setRoleMapping } from './db.js';
 
 export const ROLE_NAMES = Object.freeze({
   pending: 'En attente',
@@ -10,39 +11,64 @@ export const ROLE_NAMES = Object.freeze({
   en: 'EN'
 });
 
+async function resolveManagedRole(guild, mappingKey, canonicalName, createOptions = {}) {
+  const saved = getRoleMapping(guild.id, mappingKey);
+
+  // Priorité absolue à l'ID sauvegardé : le rôle peut donc être renommé librement.
+  if (saved?.role_id) {
+    const byId = guild.roles.cache.get(saved.role_id)
+      ?? await guild.roles.fetch(saved.role_id).catch(() => null);
+    if (byId) {
+      console.log(`[setup] rôle par ID: ${canonicalName} -> ${byId.name} (${byId.id})`);
+      return byId;
+    }
+    console.warn(`[setup] rôle ID introuvable pour ${canonicalName}: ${saved.role_id}; recherche par nom.`);
+  }
+
+  // Première migration : retrouve le rôle existant à partir de son nom canonique.
+  let role = guild.roles.cache.find((r) => r.name === canonicalName);
+  if (!role) {
+    role = await guild.roles.create({
+      name: canonicalName,
+      reason: createOptions.reason ?? 'Initialisation Cage & Key bot',
+      mentionable: createOptions.mentionable ?? false
+    });
+    console.log(`[setup] rôle créé: ${canonicalName} (${role.id})`);
+  } else {
+    console.log(`[setup] rôle trouvé par nom: ${canonicalName} (${role.id})`);
+  }
+
+  setRoleMapping(guild.id, mappingKey, role.id, canonicalName);
+  console.log(`[setup] ID mémorisé: ${mappingKey} -> ${role.id}`);
+  return role;
+}
+
 export async function ensureRoles(guild) {
   await guild.roles.fetch();
   const roles = { profileByName: new Map() };
 
   for (const [key, name] of Object.entries(ROLE_NAMES)) {
-    let role = guild.roles.cache.find((r) => r.name === name);
-    if (!role) {
-      role = await guild.roles.create({ name, reason: 'Initialisation Cage & Key bot' });
-      console.log(`[setup] rôle créé: ${name} (${role.id})`);
-    } else {
-      console.log(`[setup] rôle trouvé: ${name} (${role.id})`);
-    }
-    roles[key] = role;
+    roles[key] = await resolveManagedRole(
+      guild,
+      `system:${key}`,
+      name,
+      { reason: 'Initialisation Cage & Key bot' }
+    );
   }
 
-  // Crée tous les rôles de profil manquants. Les noms identiques entre
-  // plusieurs langues sont dédupliqués automatiquement.
+  // Les libellés servent uniquement de clé logique interne.
+  // Une fois l'ID mémorisé, le rôle peut être renommé (emoji, traduction, etc.).
   for (const name of allProfileRoleNames()) {
-    let role = guild.roles.cache.find((r) => r.name === name);
-    if (!role) {
-      role = await guild.roles.create({
-        name,
-        mentionable: false,
-        reason: 'Rôle de profil Cage & Key'
-      });
-      console.log(`[setup] rôle profil créé: ${name} (${role.id})`);
-    } else {
-      console.log(`[setup] rôle profil trouvé: ${name} (${role.id})`);
-    }
+    const role = await resolveManagedRole(
+      guild,
+      `profile:${name}`,
+      name,
+      { reason: 'Rôle de profil Cage & Key', mentionable: false }
+    );
     roles.profileByName.set(name, role);
   }
 
-  console.log(`[setup] ${roles.profileByName.size} rôles de profil disponibles.`);
+  console.log(`[setup] ${roles.profileByName.size} rôles de profil disponibles avec IDs persistants.`);
   return roles;
 }
 
