@@ -257,3 +257,79 @@ export function roleNamesForProfile(profile) {
     }
   });
 }
+
+
+const PROFILE_ROLE_EMOJIS = Object.freeze({
+  // Âge
+  '18–20 ans': '🎂', '18–20 jaar': '🎂', '18–20': '🎂',
+  '21–30 ans': '🎂', '21–30 jaar': '🎂', '21–30': '🎂',
+  '31–40 ans': '🎂', '31–40 jaar': '🎂', '31–40': '🎂',
+  '41–50 ans': '🎂', '41–50 jaar': '🎂', '41–50': '🎂',
+  '51–60 ans': '🎂', '51–60 jaar': '🎂', '51–60': '🎂',
+  '61 ans et +': '🎂', '61 jaar en ouder': '🎂', '61+': '🎂',
+
+  // Orientation
+  'Gay': '🌈',
+  'Bisexuel·le': '💜', 'Biseksueel': '💜', 'Bisexual': '💜',
+  'Hétérosexuel·le': '❤️', 'Heteroseksueel': '❤️', 'Heterosexual': '❤️',
+  'Pansexuel·le': '🩷', 'Panseksueel': '🩷', 'Pansexual': '🩷',
+  'Lesbienne': '💗', 'Lesbisch': '💗', 'Lesbian': '💗',
+  'Asexuel·le': '🩶', 'Aseksueel': '🩶', 'Asexual': '🩶',
+  'Autre orientation': '❓', 'Andere oriëntatie': '❓', 'Other orientation': '❓',
+
+  // Genre
+  'Homme cis': '♂️', 'Cis man': '♂️',
+  'Femme cis': '♀️', 'Cis vrouw': '♀️', 'Cis woman': '♀️',
+  'Homme trans': '🏳️‍⚧️', 'Trans man': '🏳️‍⚧️',
+  'Femme trans': '🏳️‍⚧️', 'Trans vrouw': '🏳️‍⚧️', 'Trans woman': '🏳️‍⚧️',
+  'Non-binaire': '⚧️', 'Non-binair': '⚧️', 'Non-binary': '⚧️',
+  'Genre fluide': '🌊', 'Genderfluïde': '🌊', 'Genderfluid': '🌊',
+  'Agenré·e': '◻️', 'Agender': '◻️',
+  'Autre genre': '❓', 'Ander gender': '❓', 'Other gender': '❓',
+
+  // Rôle Cage & Key
+  'Keyholder': '🗝️', 'Locked': '🔒', 'Switch': '🔄',
+  'Curieux·se / pas encore défini': '👀',
+  'Nieuwsgierig / nog niet bepaald': '👀',
+  'Curious / not defined yet': '👀',
+
+  // Dispositifs
+  'Cage plate': '⬛', 'Platte kooi': '⬛', 'Flat cage': '⬛',
+  'Cage inversée': '↩️', 'Omgekeerde kooi': '↩️', 'Inverted cage': '↩️',
+  'Mini cage': '🤏', 'Mini-kooi': '🤏',
+  'Cage en plastique': '🧩', 'Plastic kooi': '🧩', 'Plastic cage': '🧩',
+  'Cage en métal': '⛓️', 'Metalen kooi': '⛓️', 'Metal cage': '⛓️',
+  'Cage en silicone': '💧', 'Siliconen kooi': '💧', 'Silicone cage': '💧',
+  'Ceinture de chasteté': '🔐', 'Kuisheidsgordel': '🔐', 'Chastity belt': '🔐',
+  'Je n’en utilise pas encore': '🕊️', 'Ik gebruik er nog geen': '🕊️', 'I don’t use one yet': '🕊️',
+  'Autre dispositif': '❓', 'Ander apparaat': '❓', 'Other device': '❓',
+
+  // Gestion des clés
+  'Je détiens les clés d’une ou plusieurs personnes': '🔑',
+  'Ik heb de sleutels van één of meerdere personen': '🔑',
+  'I hold one or more people’s keys': '🔑',
+  'Quelqu’un d’autre détient mes clés': '🔒',
+  'Iemand anders heeft mijn sleutels': '🔒',
+  'Someone else holds my keys': '🔒',
+  'Je garde mes propres clés': '🔐',
+  'Ik houd mijn eigen sleutels': '🔐',
+  'I keep my own keys': '🔐',
+  'Pas de gestion particulière des clés': '➖',
+  'Geen specifieke sleutelregeling': '➖',
+  'No particular key management': '➖',
+  'Non applicable / pas encore': '⭕',
+  'Niet van toepassing / nog niet': '⭕',
+  'Not applicable / not yet': '⭕',
+
+  // Kinks
+  'Dom': '👑', 'Sub': '🧎',
+  'Puppy': '🐶', 'Furry': '🐾', 'Leather': '🖤', 'Rubber': '🧤',
+  'Sportswear': '🏃', 'Sneakers': '👟', 'MX / Biker': '🏍️', 'ABDL': '🍼',
+  'Chasteté': '🔒', 'Kuisheid': '🔒', 'Chastity': '🔒',
+  'Autre kink': '❓', 'Andere kink': '❓', 'Other kink': '❓'
+});
+
+export function profileRoleDisplayName(canonicalName) {
+  const emoji = PROFILE_ROLE_EMOJIS[canonicalName];
+  return emoji ? `${emoji} ${canonicalName}` : canonicalName;
+}
