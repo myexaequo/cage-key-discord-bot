@@ -1,7 +1,8 @@
 import http from 'node:http';
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
 import { config } from './config.js';
-import { ensureRoles, checkConfiguration } from './roles.js';
+import { ensureRoles, checkConfiguration, syncExistingProfileRoles } from './roles.js';
+import { listProfiles } from './db.js';
 import { registerCommands } from './register-commands.js';
 import {
   sendWelcomeDM,
@@ -41,6 +42,7 @@ client.once(Events.ClientReady, async (readyClient) => {
     await guild.members.fetchMe();
     roles = await ensureRoles(guild);
     await checkConfiguration(guild, roles);
+    await syncExistingProfileRoles(guild, roles, listProfiles(config.guildId));
   } catch (error) {
     console.error('[setup] erreur de configuration du serveur', error);
   }
