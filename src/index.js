@@ -39,7 +39,13 @@ client.once(Events.ClientReady, async (readyClient) => {
 
   try {
     const guild = await readyClient.guilds.fetch(config.guildId);
-    await guild.members.fetchMe();
+    const botMember = await guild.members.fetchMe();
+
+    if (botMember.nickname !== 'C&K Bot') {
+      await botMember.setNickname('C&K Bot', 'Nom du bot Cage & Key');
+      console.log('[setup] surnom du bot défini sur C&K Bot');
+    }
+
     roles = await ensureRoles(guild);
     await checkConfiguration(guild, roles);
     await syncExistingProfileRoles(guild, roles, listProfiles(config.guildId));
@@ -100,7 +106,7 @@ http.createServer((req, res) => {
     return;
   }
   res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
-  res.end('Cage & Key Discord Bot');
+  res.end('C&K Bot');
 }).listen(config.port, '0.0.0.0', () => console.log(`[http] healthcheck sur :${config.port}`));
 
 client.login(config.token);
