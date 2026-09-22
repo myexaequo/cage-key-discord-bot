@@ -1,6 +1,6 @@
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { config } from './config.js';
-import { allProfileRoleNames, roleNamesForApplication, roleNamesForProfile } from './profile-roles.js';
+import { allProfileRoleNames, roleNamesForApplication, roleNamesForProfile, profileRoleDisplayName } from './profile-roles.js';
 import { getRoleMapping, setRoleMapping } from './db.js';
 
 export const ROLE_NAMES = Object.freeze({
@@ -11,31 +11,49 @@ export const ROLE_NAMES = Object.freeze({
   en: 'EN'
 });
 
+const SYSTEM_ROLE_DISPLAY_NAMES = Object.freeze({
+  pending: '⏳ En attente',
+  member: '✅ Membre',
+  fr: '🇫🇷 FR',
+  nl: '🇳🇱 NL',
+  en: '🇬🇧 EN'
+});
+
 async function resolveManagedRole(guild, mappingKey, canonicalName, createOptions = {}) {
   const saved = getRoleMapping(guild.id, mappingKey);
+  const desiredName = createOptions.displayName ?? canonicalName;
 
-  // Priorité absolue à l'ID sauvegardé : le rôle peut donc être renommé librement.
+  // Priorité absolue à l'ID sauvegardé.
   if (saved?.role_id) {
     const byId = guild.roles.cache.get(saved.role_id)
       ?? await guild.roles.fetch(saved.role_id).catch(() => null);
     if (byId) {
+      if (byId.name !== desiredName && byId.editable) {
+        await byId.setName(desiredName, 'Convention visuelle Cage & Key');
+        console.log(`[setup] rôle renommé: ${canonicalName} -> ${desiredName} (${byId.id})`);
+      }
       console.log(`[setup] rôle par ID: ${canonicalName} -> ${byId.name} (${byId.id})`);
       return byId;
     }
     console.warn(`[setup] rôle ID introuvable pour ${canonicalName}: ${saved.role_id}; recherche par nom.`);
   }
 
-  // Première migration : retrouve le rôle existant à partir de son nom canonique.
-  let role = guild.roles.cache.find((r) => r.name === canonicalName);
+  // Migration initiale : accepte le nom canonique ou le nom déjà décoré.
+  let role = guild.roles.cache.find((r) => r.name === canonicalName || r.name === desiredName);
   if (!role) {
     role = await guild.roles.create({
-      name: canonicalName,
+      name: desiredName,
       reason: createOptions.reason ?? 'Initialisation Cage & Key bot',
       mentionable: createOptions.mentionable ?? false
     });
-    console.log(`[setup] rôle créé: ${canonicalName} (${role.id})`);
+    console.log(`[setup] rôle créé: ${desiredName} (${role.id})`);
   } else {
-    console.log(`[setup] rôle trouvé par nom: ${canonicalName} (${role.id})`);
+    if (role.name !== desiredName && role.editable) {
+      await role.setName(desiredName, 'Convention visuelle Cage & Key');
+      console.log(`[setup] rôle renommé: ${canonicalName} -> ${desiredName} (${role.id})`);
+    } else {
+      console.log(`[setup] rôle trouvé: ${role.name} (${role.id})`);
+    }
   }
 
   setRoleMapping(guild.id, mappingKey, role.id, canonicalName);
@@ -52,7 +70,10 @@ export async function ensureRoles(guild) {
       guild,
       `system:${key}`,
       name,
-      { reason: 'Initialisation Cage & Key bot' }
+      {
+        reason: 'Initialisation Cage & Key bot',
+        displayName: SYSTEM_ROLE_DISPLAY_NAMES[key] ?? name
+      }
     );
   }
 
@@ -63,7 +84,11 @@ export async function ensureRoles(guild) {
       guild,
       `profile:${name}`,
       name,
-      { reason: 'Rôle de profil Cage & Key', mentionable: false }
+      {
+        reason: 'Rôle de profil Cage & Key',
+        mentionable: false,
+        displayName: profileRoleDisplayName(name)
+      }
     );
     roles.profileByName.set(name, role);
   }
