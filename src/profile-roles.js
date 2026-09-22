@@ -241,3 +241,19 @@ export function roleNamesForApplication(application) {
 
   return [...new Set(names)];
 }
+
+
+export function roleNamesForProfile(profile) {
+  return roleNamesForApplication({
+    language: profile.language,
+    data: {
+      age: profile.age_band,
+      orientation: profile.orientation,
+      gender: profile.gender,
+      role: profile.chastity_role,
+      devices: profile.devices ?? [],
+      keys: profile.keys ?? [],
+      kinks: profile.kinks ?? []
+    }
+  });
+}
