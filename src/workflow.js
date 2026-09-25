@@ -50,15 +50,13 @@ export async function startOnboarding(interaction, roles) {
   return showCurrent(interaction, app);
 }
 
-export async function sendWelcomeDM(member, roles) {
+export async function prepareWelcomeMember(member, roles) {
   await assignPending(member, roles);
-  upsertApplication(member.guild.id, member.id, { stage: 'language', status: 'draft', data: {} });
-  try {
-    await member.send(welcomePayload());
-    audit(member.guild.id, 'onboarding_started', { userId: member.id });
-  } catch {
-    audit(member.guild.id, 'welcome_dm_failed', { userId: member.id });
+  const existing = getApplication(member.guild.id, member.id);
+  if (!existing) {
+    upsertApplication(member.guild.id, member.id, { stage: 'language', status: 'draft', data: {} });
   }
+  audit(member.guild.id, 'onboarding_ready', { userId: member.id });
 }
 
 async function underageFlow(interaction) {
@@ -93,13 +91,13 @@ export async function handleOnboardingInteraction(interaction) {
     const lang = interaction.customId.split(':')[2];
     if (!isValidChoice('language', lang)) return;
     const app = getApplication(config.guildId, interaction.user.id) ?? upsertApplication(config.guildId, interaction.user.id, { stage: 'language', data: {} });
-    const updated = upsertApplication(config.guildId, interaction.user.id, { language: lang, stage: 'age', data: app.data });
-    return interaction.update(stagePayload('age', lang));
+    const updated = upsertApplication(config.guildId, interaction.user.id, { language: lang, stage: 'server_languages', data: app.data });
+    return interaction.update(stagePayload('server_languages', lang));
   }
 
   if (interaction.isStringSelectMenu() && interaction.customId.startsWith('onboard:')) {
     const field = interaction.customId.split(':')[1];
-    const multi = ['devices', 'keys', 'kinks'].includes(field);
+    const multi = ['server_languages', 'devices', 'keys', 'kinks'].includes(field);
     return advance(interaction, field, multi ? interaction.values : interaction.values[0], multi);
   }
 
