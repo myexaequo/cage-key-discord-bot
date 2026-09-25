@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { nextStage, isValidChoice, isValidMultiChoice } from '../src/questions.js';
 
 test('questionnaire suit le bon ordre', () => {
-  assert.equal(nextStage('language'), 'age');
+  assert.equal(nextStage('language'), 'server_languages');
+  assert.equal(nextStage('server_languages'), 'age');
   assert.equal(nextStage('age'), 'orientation');
   assert.equal(nextStage('orientation'), 'gender');
   assert.equal(nextStage('gender'), 'role');
