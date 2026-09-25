@@ -106,12 +106,21 @@ export function isStaff(member) {
 }
 
 export async function assignPending(member, roles) {
-  if (!member.roles.cache.has(roles.pending.id)) await member.roles.add(roles.pending, 'Nouvelle demande Cage & Key');
+  const accessRoles = [roles.member, roles.fr, roles.nl, roles.en].filter(Boolean);
+  const toRemove = accessRoles.filter((role) => member.roles.cache.has(role.id));
+  if (toRemove.length) {
+    await member.roles.remove(toRemove, 'Accès communautaire bloqué avant validation');
+  }
+  if (!member.roles.cache.has(roles.pending.id)) {
+    await member.roles.add(roles.pending, 'Nouvelle demande Cage & Key');
+  }
 }
 
 export async function approveMember(member, roles, application) {
-  const language = application.language;
-  const languageRole = roles[language];
+  const selectedLanguages = Array.isArray(application.data?.server_languages) && application.data.server_languages.length
+    ? application.data.server_languages
+    : [application.language];
+  const languageRoles = selectedLanguages.map((lang) => roles[lang]).filter(Boolean);
 
   const profileRoleNames = roleNamesForApplication(application);
   const profileRoles = profileRoleNames
@@ -119,7 +128,7 @@ export async function approveMember(member, roles, application) {
     .filter(Boolean);
 
   const uniqueRoles = [...new Map(
-    [roles.member, languageRole, ...profileRoles]
+    [roles.member, ...languageRoles, ...profileRoles]
       .filter(Boolean)
       .map((role) => [role.id, role])
   ).values()];
@@ -131,8 +140,8 @@ export async function approveMember(member, roles, application) {
   }
 
   for (const lang of ['fr', 'nl', 'en']) {
-    if (lang !== language && member.roles.cache.has(roles[lang].id)) {
-      await member.roles.remove(roles[lang], 'Synchronisation de la langue Cage & Key');
+    if (!selectedLanguages.includes(lang) && member.roles.cache.has(roles[lang].id)) {
+      await member.roles.remove(roles[lang], 'Synchronisation des langues Cage & Key');
     }
   }
 
@@ -161,13 +170,31 @@ export async function checkConfiguration(guild, roles) {
       console.warn(`[setup] catégorie ${lang.toUpperCase()} introuvable ou invalide: ${categoryId}`);
       continue;
     }
-    const everyoneOverwrite = channel.permissionOverwrites.cache.get(guild.roles.everyone.id);
-    const langOverwrite = channel.permissionOverwrites.cache.get(roles[lang].id);
-    const everyoneDenied = everyoneOverwrite?.deny.has(PermissionFlagsBits.ViewChannel) ?? false;
-    const languageAllowed = langOverwrite?.allow.has(PermissionFlagsBits.ViewChannel) ?? false;
-    if (!everyoneDenied || !languageAllowed) {
-      console.warn(`[setup] catégorie ${lang.toUpperCase()}: vérifie les permissions (refuser Voir le salon à @everyone et l’autoriser au rôle ${lang.toUpperCase()}).`);
+
+    // Les catégories linguistiques restent invisibles tant qu'un rôle de langue
+    // n'a pas été attribué après validation du profil.
+    await channel.permissionOverwrites.edit(
+      guild.roles.everyone,
+      { ViewChannel: false },
+      { reason: 'Accès Cage & Key réservé aux profils validés' }
+    );
+
+    await channel.permissionOverwrites.edit(
+      roles[lang],
+      { ViewChannel: true },
+      { reason: 'Accès Cage & Key selon les langues choisies' }
+    );
+
+    for (const otherLang of ['fr', 'nl', 'en']) {
+      if (otherLang === lang) continue;
+      await channel.permissionOverwrites.edit(
+        roles[otherLang],
+        { ViewChannel: null },
+        { reason: 'Isolation des catégories linguistiques Cage & Key' }
+      );
     }
+
+    console.log(`[setup] catégorie ${lang.toUpperCase()}: accès limité au rôle ${roles[lang].name} après validation.`);
   }
 }
 
@@ -183,14 +210,17 @@ export async function syncExistingProfileRoles(guild, roles, profiles) {
       continue;
     }
 
-    const languageRole = roles[profile.language];
+    const selectedLanguages = Array.isArray(profile.server_languages) && profile.server_languages.length
+      ? profile.server_languages
+      : [profile.language];
+    const languageRoles = selectedLanguages.map((lang) => roles[lang]).filter(Boolean);
     const profileRoleNames = roleNamesForProfile(profile);
     const profileRoles = profileRoleNames
       .map((name) => roles.profileByName.get(name))
       .filter(Boolean);
 
     const toAdd = [...new Map(
-      [roles.member, languageRole, ...profileRoles]
+      [roles.member, ...languageRoles, ...profileRoles]
         .filter(Boolean)
         .map((role) => [role.id, role])
     ).values()]

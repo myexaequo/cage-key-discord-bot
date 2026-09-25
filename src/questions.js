@@ -1,5 +1,6 @@
 export const STAGES = Object.freeze([
   'language',
+  'server_languages',
   'age',
   'orientation',
   'gender',
@@ -12,6 +13,7 @@ export const STAGES = Object.freeze([
 
 export const OPTIONS = Object.freeze({
   language: ['fr', 'nl', 'en'],
+  server_languages: ['fr', 'nl', 'en'],
   age: ['under18', '18-20', '21-30', '31-40', '41-50', '51-60', '61+'],
   orientation: ['gay', 'bisexual', 'heterosexual', 'pansexual', 'lesbian', 'asexual', 'other'],
   gender: ['cis_man', 'cis_woman', 'trans_man', 'trans_woman', 'nonbinary', 'genderfluid', 'agender', 'other'],

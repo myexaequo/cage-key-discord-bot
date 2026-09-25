@@ -5,7 +5,7 @@ import { ensureRoles, checkConfiguration, syncExistingProfileRoles } from './rol
 import { listProfiles } from './db.js';
 import { registerCommands } from './register-commands.js';
 import {
-  sendWelcomeDM,
+  prepareWelcomeMember,
   startOnboarding,
   handleOnboardingInteraction,
   handleProfileCommand,
@@ -50,7 +50,7 @@ client.once(Events.ClientReady, async (readyClient) => {
 
 client.on(Events.GuildMemberAdd, async (member) => {
   if (member.guild.id !== config.guildId || member.user.bot) return;
-  try { await sendWelcomeDM(member, roles); } catch (error) { console.error('[join]', error); }
+  try { await prepareWelcomeMember(member, roles); } catch (error) { console.error('[join]', error); }
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
