@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   devices_json TEXT NOT NULL,
   keys_json TEXT NOT NULL,
   kinks_json TEXT NOT NULL,
+  server_languages_json TEXT NOT NULL DEFAULT '[]',
   approved_by TEXT NOT NULL,
   approved_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
@@ -69,6 +70,11 @@ CREATE TABLE IF NOT EXISTS role_mappings (
   PRIMARY KEY (guild_id, mapping_key)
 ) STRICT;
 `);
+
+const profileColumns = db.prepare('PRAGMA table_info(profiles)').all().map((column) => column.name);
+if (!profileColumns.includes('server_languages_json')) {
+  db.exec("ALTER TABLE profiles ADD COLUMN server_languages_json TEXT NOT NULL DEFAULT '[]';");
+}
 
 const now = () => new Date().toISOString();
 const parseJson = (value, fallback = {}) => {
@@ -111,16 +117,18 @@ export function saveProfileFromApplication(application, approvedBy) {
   const d = application.data;
   const ts = now();
   db.prepare(`
-    INSERT INTO profiles (guild_id,user_id,language,age_band,orientation,gender,chastity_role,devices_json,keys_json,kinks_json,approved_by,approved_at,updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+    INSERT INTO profiles (guild_id,user_id,language,age_band,orientation,gender,chastity_role,devices_json,keys_json,kinks_json,server_languages_json,approved_by,approved_at,updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     ON CONFLICT(guild_id,user_id) DO UPDATE SET
       language=excluded.language, age_band=excluded.age_band, orientation=excluded.orientation,
       gender=excluded.gender, chastity_role=excluded.chastity_role, devices_json=excluded.devices_json,
-      keys_json=excluded.keys_json, kinks_json=excluded.kinks_json, approved_by=excluded.approved_by,
+      keys_json=excluded.keys_json, kinks_json=excluded.kinks_json, server_languages_json=excluded.server_languages_json,
+      approved_by=excluded.approved_by,
       approved_at=excluded.approved_at, updated_at=excluded.updated_at
   `).run(
     application.guild_id, application.user_id, application.language, d.age, d.orientation, d.gender, d.role,
-    JSON.stringify(d.devices), JSON.stringify(d.keys), JSON.stringify(d.kinks), approvedBy, ts, ts
+    JSON.stringify(d.devices), JSON.stringify(d.keys), JSON.stringify(d.kinks),
+    JSON.stringify(d.server_languages ?? [application.language]), approvedBy, ts, ts
   );
   return getProfile(application.guild_id, application.user_id);
 }
@@ -132,7 +140,11 @@ export function getProfile(guildId, userId) {
     ...row,
     devices: parseJson(row.devices_json, []),
     keys: parseJson(row.keys_json, []),
-    kinks: parseJson(row.kinks_json, [])
+    kinks: parseJson(row.kinks_json, []),
+    server_languages: (() => {
+      const values = parseJson(row.server_languages_json, []);
+      return Array.isArray(values) && values.length ? values : [row.language];
+    })()
   };
 }
 
@@ -141,7 +153,11 @@ export function listProfiles(guildId) {
     ...row,
     devices: parseJson(row.devices_json, []),
     keys: parseJson(row.keys_json, []),
-    kinks: parseJson(row.kinks_json, [])
+    kinks: parseJson(row.kinks_json, []),
+    server_languages: (() => {
+      const values = parseJson(row.server_languages_json, []);
+      return Array.isArray(values) && values.length ? values : [row.language];
+    })()
   }));
 }
 
