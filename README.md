@@ -5,8 +5,9 @@ Bot Discord pour l’accueil, le questionnaire d’admission, la validation huma
 ## Fonctionnalités V1
 
 - Animation néon `Cage & Key` à l’arrivée.
-- Choix de langue FR / NL / EN, puis parcours traduit.
-- Rôle temporaire `En attente`.
+- Choix initial de la langue du formulaire (FR / NL / EN), puis parcours traduit.
+- Choix multiple séparé des langues de salons à afficher après validation.
+- Rôle temporaire `En attente` : avant validation, aucun rôle FR/NL/EN n’est attribué.
 - Questionnaire : âge, orientation, genre, rôle, dispositifs, gestion des clés, kinks.
 - `-18 ans` : arrêt immédiat, message 18+, journalisation minimale, kick automatique et suppression du brouillon.
 - Récapitulatif avant envoi ; toutes les réponses validées sont visibles dans `/profil`.
@@ -14,11 +15,11 @@ Bot Discord pour l’accueil, le questionnaire d’admission, la validation huma
 - Boutons staff : Accepter / Refuser / Demander une précision.
 - Refus avec motif + MP + kick.
 - Demande de précision avec réponse via modal et retour dans `#validation`.
-- Acceptation : `Membre` + rôle de langue, retrait de `En attente`, animation de cadenas qui s’ouvre.
+- Acceptation : `Membre` + tous les rôles de langues choisis, retrait de `En attente`, animation de cadenas qui s’ouvre.
 - Création automatique des rôles `En attente`, `Membre`, `FR`, `NL`, `EN` s’ils n’existent pas.
 - Rôles `Propriétaire`, `Administrateur` et `Modérateur` laissés à Discord.
 - SQLite local persistant dans `DATA_DIR`.
-- `/commencer` pour relancer/reprendre l’inscription si les MP sont bloqués.
+- L’onboarding ne s’ouvre plus en message privé à l’arrivée. `/commencer` lance/reprend le formulaire dans une réponse éphémère à l’intérieur du serveur.
 - `/profil [membre]` pour afficher un profil validé (réservé aux membres validés et au staff).
 - `/health` pour l’hébergement en container.
 
@@ -53,13 +54,13 @@ Renseigner dans `.env` :
 
 ### Permissions des catégories par langue
 
-Le bot attribue le rôle `FR`, `NL` ou `EN` après acceptation. Dans Discord, configure chaque catégorie pour :
+Le bot attribue un ou plusieurs rôles `FR`, `NL`, `EN` uniquement après acceptation. Il applique aussi les permissions de visibilité des catégories linguistiques pour :
 
 - refuser `Voir le salon` à `@everyone` ;
 - autoriser `Voir le salon` au rôle correspondant (`FR`, `NL` ou `EN`) ;
 - conserver les permissions nécessaires pour le staff.
 
-Le bot vérifie cette configuration au démarrage et affiche un avertissement dans les logs s’il détecte un problème ; il ne réécrit pas automatiquement les permissions existantes afin de ne pas casser la structure du serveur.
+Le bot force `Voir le salon = non` pour `@everyone` sur les catégories FR/NL/EN et autorise la visibilité au rôle de langue correspondant. Les membres `En attente` restent donc limités à la catégorie Welcome configurée côté Discord.
 
 ## Docker
 
