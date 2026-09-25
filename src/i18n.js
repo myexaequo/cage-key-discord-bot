@@ -1,7 +1,8 @@
 const languages = {
   fr: {
     name: 'Français',
-    chooseLanguage: 'Choisis ta langue',
+    chooseLanguage: 'Choisis la langue du formulaire',
+    serverLanguagesQ: 'Quelles langues veux-tu voir sur le serveur ?',
     ageQ: 'Quelle est ta tranche d’âge ?',
     orientationQ: 'Quelle est ton orientation sexuelle ?',
     genderQ: 'Quel est ton genre ?',
@@ -27,7 +28,8 @@ const languages = {
   },
   nl: {
     name: 'Nederlands',
-    chooseLanguage: 'Kies je taal',
+    chooseLanguage: 'Kies de taal van het formulier',
+    serverLanguagesQ: 'Welke talen wil je op de server zien?',
     ageQ: 'Wat is je leeftijdscategorie?',
     orientationQ: 'Wat is je seksuele oriëntatie?',
     genderQ: 'Wat is je gender?',
@@ -53,7 +55,8 @@ const languages = {
   },
   en: {
     name: 'English',
-    chooseLanguage: 'Choose your language',
+    chooseLanguage: 'Choose the form language',
+    serverLanguagesQ: 'Which languages do you want to see on the server?',
     ageQ: 'What is your age range?',
     orientationQ: 'What is your sexual orientation?',
     genderQ: 'What is your gender?',
