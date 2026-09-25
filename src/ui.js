@@ -24,7 +24,7 @@ function option(code, lang) {
 export function languageScreen() {
   const embed = new EmbedBuilder()
     .setTitle('Cage & Key')
-    .setDescription('Choisis ta langue • Kies je taal • Choose your language');
+    .setDescription('Langue du formulaire • Taal van het formulier • Form language');
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId('onboard:lang:fr').setLabel('FR').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId('onboard:lang:nl').setLabel('NL').setStyle(ButtonStyle.Primary),
@@ -56,6 +56,7 @@ function selectScreen({ id, question, codes, lang, multi = false }) {
 export function stagePayload(stage, lang) {
   const strings = t(lang);
   switch (stage) {
+    case 'server_languages': return selectScreen({ id: 'server_languages', question: strings.serverLanguagesQ, codes: OPTIONS.server_languages, lang, multi: true });
     case 'age': return selectScreen({ id: 'age', question: strings.ageQ, codes: OPTIONS.age, lang });
     case 'orientation': return selectScreen({ id: 'orientation', question: strings.orientationQ, codes: OPTIONS.orientation, lang });
     case 'gender': return selectScreen({ id: 'gender', question: strings.genderQ, codes: OPTIONS.gender, lang });
@@ -71,7 +72,8 @@ export function profileEmbed(user, profile, lang = profile.language ?? 'fr') {
   const embed = new EmbedBuilder().setTitle(`Profil — ${user.displayName ?? user.username}`);
   if (typeof user.displayAvatarURL === 'function') embed.setThumbnail(user.displayAvatarURL());
   return embed.addFields(
-      { name: 'Langue', value: label(profile.language, lang), inline: true },
+      { name: 'Langue du formulaire', value: label(profile.language, lang), inline: true },
+      { name: 'Langues du serveur', value: labels(profile.server_languages ?? [profile.language], lang) || '—', inline: true },
       { name: 'Âge', value: label(profile.age_band ?? profile.age, lang), inline: true },
       { name: 'Orientation', value: label(profile.orientation, lang), inline: true },
       { name: 'Genre', value: label(profile.gender, lang), inline: true },
@@ -87,7 +89,7 @@ export function summaryPayload(user, application) {
   const d = application.data;
   const s = t(lang);
   const profile = {
-    language: lang, age: d.age, orientation: d.orientation, gender: d.gender,
+    language: lang, server_languages: d.server_languages ?? [lang], age: d.age, orientation: d.orientation, gender: d.gender,
     role: d.role, devices: d.devices, keys: d.keys, kinks: d.kinks
   };
   const embed = profileEmbed(user, profile, lang).setTitle(s.summaryTitle).setDescription(s.summaryNotice);
@@ -101,7 +103,7 @@ export function summaryPayload(user, application) {
 export function validationPayload(user, application) {
   const d = application.data;
   const profile = {
-    language: application.language, age: d.age, orientation: d.orientation, gender: d.gender,
+    language: application.language, server_languages: d.server_languages ?? [application.language], age: d.age, orientation: d.orientation, gender: d.gender,
     role: d.role, devices: d.devices, keys: d.keys, kinks: d.kinks
   };
   const embed = profileEmbed(user, profile, 'fr')
