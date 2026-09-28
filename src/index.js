@@ -27,7 +27,7 @@ client.once(Events.ClientReady, async (readyClient) => {
   console.log(`[bot] connecté comme ${readyClient.user.tag}`);
 
   // Enregistrer les slash commands indépendamment de la configuration des rôles.
-  // Ainsi /commencer et /profil restent disponibles même si un rôle ou une permission
+  // Ainsi /start et /profil restent disponibles même si un rôle ou une permission
   // du serveur doit encore être corrigé.
   if (config.registerCommandsOnStart) {
     try {
@@ -56,7 +56,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isChatInputCommand()) {
-      if (interaction.commandName === 'commencer') return startOnboarding(interaction, roles);
+      if (interaction.commandName === 'start') return startOnboarding(interaction, roles);
       if (interaction.commandName === 'profil') return handleProfileCommand(interaction);
     }
 

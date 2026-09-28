@@ -19,7 +19,7 @@ Bot Discord pour l’accueil, le questionnaire d’admission, la validation huma
 - Création automatique des rôles `En attente`, `Membre`, `FR`, `NL`, `EN` s’ils n’existent pas.
 - Rôles `Propriétaire`, `Administrateur` et `Modérateur` laissés à Discord.
 - SQLite local persistant dans `DATA_DIR`.
-- L’onboarding ne s’ouvre plus en message privé à l’arrivée. `/commencer` lance/reprend le formulaire dans une réponse éphémère à l’intérieur du serveur.
+- L’onboarding ne s’ouvre plus en message privé à l’arrivée. `/start` lance/reprend le formulaire dans une réponse éphémère à l’intérieur du serveur.
 - `/profil [membre]` pour afficher un profil validé (réservé aux membres validés et au staff).
 - `/health` pour l’hébergement en container.
 
