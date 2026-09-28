@@ -2,7 +2,7 @@ import { ApplicationCommandType, ContextMenuCommandBuilder, SlashCommandBuilder 
 
 export const commands = [
   new SlashCommandBuilder()
-    .setName('commencer')
+    .setName('start')
     .setDescription('Commencer ou reprendre l’inscription Cage & Key'),
   new SlashCommandBuilder()
     .setName('profil')
