@@ -11,7 +11,8 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { OPTIONS } from './questions.js';
-import { t, label, labels } from './i18n.js';
+import { t, label } from './i18n.js';
+import { profileOptionDisplayName } from './profile-roles.js';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 export const welcomeGifPath = path.resolve(dirname, '../assets/cage-key-welcome.gif');
@@ -68,19 +69,35 @@ export function stagePayload(stage, lang) {
   }
 }
 
+const LANGUAGE_FLAGS = Object.freeze({ fr: '🇫🇷', nl: '🇳🇱', en: '🇬🇧' });
+
+function languageDisplay(code, lang) {
+  const flag = LANGUAGE_FLAGS[code] ?? '';
+  const text = label(code, lang);
+  return flag ? `${flag} ${text}` : text;
+}
+
+function profileDisplay(lang, group, code) {
+  return profileOptionDisplayName(lang, group, code) ?? label(code, lang);
+}
+
+function profileDisplays(lang, group, codes = []) {
+  return codes.map((code) => profileDisplay(lang, group, code)).join(', ');
+}
+
 export function profileEmbed(user, profile, lang = profile.language ?? 'fr') {
   const embed = new EmbedBuilder().setTitle(`Profil — ${user.displayName ?? user.username}`);
   if (typeof user.displayAvatarURL === 'function') embed.setThumbnail(user.displayAvatarURL());
   return embed.addFields(
-      { name: 'Langue du formulaire', value: label(profile.language, lang), inline: true },
-      { name: 'Langues du serveur', value: labels(profile.server_languages ?? [profile.language], lang) || '—', inline: true },
-      { name: 'Âge', value: label(profile.age_band ?? profile.age, lang), inline: true },
-      { name: 'Orientation', value: label(profile.orientation, lang), inline: true },
-      { name: 'Genre', value: label(profile.gender, lang), inline: true },
-      { name: 'Rôle', value: label(profile.chastity_role ?? profile.role, lang), inline: true },
-      { name: 'Dispositifs', value: labels(profile.devices ?? [], lang) || '—' },
-      { name: 'Clés', value: labels(profile.keys ?? [], lang) || '—' },
-      { name: 'Kinks', value: labels(profile.kinks ?? [], lang) || '—' }
+      { name: 'Langue du formulaire', value: languageDisplay(profile.language, lang), inline: true },
+      { name: 'Langues du serveur', value: (profile.server_languages ?? [profile.language]).map((code) => languageDisplay(code, lang)).join(', ') || '—', inline: true },
+      { name: 'Âge', value: profileDisplay(lang, 'age', profile.age_band ?? profile.age), inline: true },
+      { name: 'Orientation', value: profileDisplay(lang, 'orientation', profile.orientation), inline: true },
+      { name: 'Genre', value: profileDisplay(lang, 'gender', profile.gender), inline: true },
+      { name: 'Rôle', value: profileDisplay(lang, 'role', profile.chastity_role ?? profile.role), inline: true },
+      { name: 'Dispositifs', value: profileDisplays(lang, 'devices', profile.devices ?? []) || '—' },
+      { name: 'Clés', value: profileDisplays(lang, 'keys', profile.keys ?? []) || '—' },
+      { name: 'Kinks', value: profileDisplays(lang, 'kinks', profile.kinks ?? []) || '—' }
     );
 }
 
