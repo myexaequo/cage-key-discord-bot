@@ -3,6 +3,7 @@ import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
 import { config } from './config.js';
 import { ensureRoles, checkConfiguration, syncExistingProfileRoles } from './roles.js';
 import { listProfiles } from './db.js';
+import { ensureRulesMessage, handleRulesReactionAdd, handleRulesReactionRemove } from './rules.js';
 import { registerCommands } from './register-commands.js';
 import {
   prepareWelcomeMember,
@@ -17,8 +18,13 @@ import {
 } from './workflow.js';
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.DirectMessages],
-  partials: [Partials.Channel]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.DirectMessages
+  ],
+  partials: [Partials.Channel, Partials.Message, Partials.Reaction]
 });
 
 let roles;
@@ -42,6 +48,7 @@ client.once(Events.ClientReady, async (readyClient) => {
     await guild.members.fetchMe();
     roles = await ensureRoles(guild);
     await checkConfiguration(guild, roles);
+    await ensureRulesMessage(guild, roles);
     await syncExistingProfileRoles(guild, roles, listProfiles(config.guildId));
   } catch (error) {
     console.error('[setup] erreur de configuration du serveur', error);
@@ -51,6 +58,22 @@ client.once(Events.ClientReady, async (readyClient) => {
 client.on(Events.GuildMemberAdd, async (member) => {
   if (member.guild.id !== config.guildId || member.user.bot) return;
   try { await prepareWelcomeMember(member, roles); } catch (error) { console.error('[join]', error); }
+});
+
+client.on(Events.MessageReactionAdd, async (reaction, user) => {
+  try {
+    await handleRulesReactionAdd(reaction, user, roles);
+  } catch (error) {
+    console.error('[rules:add]', error);
+  }
+});
+
+client.on(Events.MessageReactionRemove, async (reaction, user) => {
+  try {
+    await handleRulesReactionRemove(reaction, user, roles);
+  } catch (error) {
+    console.error('[rules:remove]', error);
+  }
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -65,7 +88,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     if ((interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith('onboard:')) {
-      return handleOnboardingInteraction(interaction);
+      return handleOnboardingInteraction(interaction, roles);
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('validation:')) {
