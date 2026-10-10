@@ -155,6 +155,50 @@ export async function approveMember(member, roles, application) {
   return profileRoleNames;
 }
 
+
+export async function updateMemberProfileRoles(member, roles, application) {
+  const selectedLanguages = Array.isArray(application.data?.server_languages) && application.data.server_languages.length
+    ? application.data.server_languages
+    : [application.language];
+  const desiredLanguageRoles = selectedLanguages.map((lang) => roles[lang]).filter(Boolean);
+
+  const desiredProfileRoleNames = roleNamesForApplication(application);
+  const desiredProfileRoles = desiredProfileRoleNames
+    .map((name) => roles.profileByName.get(name))
+    .filter(Boolean);
+
+  const desiredIds = new Set([
+    roles.member?.id,
+    roles.rulesChecked?.id,
+    ...desiredLanguageRoles.map((role) => role.id),
+    ...desiredProfileRoles.map((role) => role.id)
+  ].filter(Boolean));
+
+  const managedProfileRoles = [...roles.profileByName.values()];
+  const managedLanguageRoles = [roles.fr, roles.nl, roles.en].filter(Boolean);
+  const removable = [...managedProfileRoles, ...managedLanguageRoles]
+    .filter((role) => member.roles.cache.has(role.id) && !desiredIds.has(role.id));
+
+  if (removable.length) {
+    await member.roles.remove(removable, 'Mise à jour du profil Cage & Key');
+  }
+
+  const toAdd = [roles.member, ...desiredLanguageRoles, ...desiredProfileRoles]
+    .filter(Boolean)
+    .filter((role) => !member.roles.cache.has(role.id));
+
+  if (toAdd.length) {
+    await member.roles.add(toAdd, 'Mise à jour du profil Cage & Key');
+  }
+
+  if (member.roles.cache.has(roles.pending.id)) {
+    await member.roles.remove(roles.pending, 'Profil déjà validé');
+  }
+
+  console.log(`[roles] profil mis à jour pour ${member.user.tag}: ${desiredProfileRoleNames.join(', ')}`);
+  return desiredProfileRoleNames;
+}
+
 export async function checkConfiguration(guild, roles) {
   const me = guild.members.me;
   const required = [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AddReactions];
