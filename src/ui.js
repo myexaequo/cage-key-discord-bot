@@ -185,7 +185,7 @@ export function updateProfileSectionPayload(section, application) {
     case 'kinks':
       return updateSelect({ field: 'kinks', question: strings.kinksQ, codes: OPTIONS.kinks, lang, current: d.kinks, multi: true });
     default:
-      return updateProfileDashboard(user, application);
+      return { embeds: [new EmbedBuilder().setTitle('✏️ Modifier mon profil').setDescription('Rubrique inconnue.')], components: [] };
   }
 }
 
