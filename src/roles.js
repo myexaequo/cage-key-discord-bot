@@ -8,7 +8,8 @@ export const ROLE_NAMES = Object.freeze({
   member: 'Membre',
   fr: 'FR',
   nl: 'NL',
-  en: 'EN'
+  en: 'EN',
+  rulesChecked: 'Rules Checked'
 });
 
 const SYSTEM_ROLE_DISPLAY_NAMES = Object.freeze({
@@ -16,7 +17,8 @@ const SYSTEM_ROLE_DISPLAY_NAMES = Object.freeze({
   member: '✅ Membre',
   fr: '🇫🇷 FR',
   nl: '🇳🇱 NL',
-  en: '🇬🇧 EN'
+  en: '🇬🇧 EN',
+  rulesChecked: 'Rules Checked'
 });
 
 async function resolveManagedRole(guild, mappingKey, canonicalName, createOptions = {}) {
@@ -156,7 +158,7 @@ export async function checkConfiguration(guild, roles) {
   if (missing.length) console.warn(`[setup] permissions bot manquantes: ${missing.map(String).join(', ')}`);
 
   const managedRoles = [
-    roles.pending, roles.member, roles.fr, roles.nl, roles.en,
+    roles.pending, roles.member, roles.fr, roles.nl, roles.en, roles.rulesChecked,
     ...roles.profileByName.values()
   ].filter(Boolean);
   const highestManaged = managedRoles.sort((a,b) => b.position-a.position)[0];
