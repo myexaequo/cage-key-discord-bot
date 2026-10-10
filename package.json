@@ -11,7 +11,7 @@
     "start": "node --env-file-if-exists=.env src/index.js",
     "register": "node --env-file-if-exists=.env src/register-commands.js",
     "test": "node --test",
-    "check": "node --check src/index.js && node --check src/workflow.js && node --check src/db.js",
+    "check": "node --check src/index.js && node --check src/workflow.js && node --check src/db.js && node --check src/roles.js && node --check src/rules.js && node --check src/ui.js",
     "preview": "node --env-file-if-exists=.env src/preview-server.js"
   },
   "dependencies": {
