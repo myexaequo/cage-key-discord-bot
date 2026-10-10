@@ -8,7 +8,8 @@ export const ROLE_NAMES = Object.freeze({
   member: 'Membre',
   fr: 'FR',
   nl: 'NL',
-  en: 'EN'
+  en: 'EN',
+  rulesChecked: 'Rules Checked'
 });
 
 const SYSTEM_ROLE_DISPLAY_NAMES = Object.freeze({
@@ -16,7 +17,8 @@ const SYSTEM_ROLE_DISPLAY_NAMES = Object.freeze({
   member: '✅ Membre',
   fr: '🇫🇷 FR',
   nl: '🇳🇱 NL',
-  en: '🇬🇧 EN'
+  en: '🇬🇧 EN',
+  rulesChecked: 'Rules Checked'
 });
 
 async function resolveManagedRole(guild, mappingKey, canonicalName, createOptions = {}) {
@@ -97,6 +99,10 @@ export async function ensureRoles(guild) {
   return roles;
 }
 
+export function hasRulesChecked(member, roles) {
+  return Boolean(member && roles?.rulesChecked && member.roles.cache.has(roles.rulesChecked.id));
+}
+
 export function isStaff(member) {
   if (!member) return false;
   if (member.permissions.has(PermissionFlagsBits.Administrator)) return true;
@@ -151,12 +157,12 @@ export async function approveMember(member, roles, application) {
 
 export async function checkConfiguration(guild, roles) {
   const me = guild.members.me;
-  const required = [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ReadMessageHistory];
+  const required = [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AddReactions];
   const missing = required.filter((p) => !me.permissions.has(p));
   if (missing.length) console.warn(`[setup] permissions bot manquantes: ${missing.map(String).join(', ')}`);
 
   const managedRoles = [
-    roles.pending, roles.member, roles.fr, roles.nl, roles.en,
+    roles.pending, roles.member, roles.fr, roles.nl, roles.en, roles.rulesChecked,
     ...roles.profileByName.values()
   ].filter(Boolean);
   const highestManaged = managedRoles.sort((a,b) => b.position-a.position)[0];

@@ -8,6 +8,8 @@ Bot Discord pour l’accueil, le questionnaire d’admission, la validation huma
 - Choix initial de la langue du formulaire (FR / NL / EN), puis parcours traduit.
 - Choix multiple séparé des langues de salons à afficher après validation.
 - Rôle temporaire `En attente` : avant validation, aucun rôle FR/NL/EN n’est attribué.
+- Acceptation du règlement via réaction 👍 sur un message trilingue FR/NL/EN ; le rôle `Rules Checked` est ajouté/retiré automatiquement.
+- `/start` est bloqué tant que le règlement n’a pas été accepté.
 - Questionnaire : âge, orientation, genre, rôle, dispositifs, gestion des clés, kinks.
 - `-18 ans` : arrêt immédiat, message 18+, journalisation minimale, kick automatique et suppression du brouillon.
 - Récapitulatif avant envoi ; toutes les réponses validées sont visibles dans `/profil`.
@@ -28,7 +30,7 @@ Bot Discord pour l’accueil, le questionnaire d’admission, la validation huma
 - Node.js **24.17+** (la documentation actuelle de discord.js 14 l’exige).
 - Un bot Discord avec l’intent privilégié **Server Members Intent / Guild Members** activé.
 - Permissions du bot : `Manage Roles`, `Kick Members`, `View Channels`, `Send Messages`, `Read Message History`, `Embed Links`, `Attach Files`.
-- Le rôle du bot doit être placé **au-dessus** de `En attente`, `Membre`, `FR`, `NL`, `EN`.
+- Le rôle du bot doit être placé **au-dessus** de `En attente`, `Membre`, `FR`, `NL`, `EN` et `Rules Checked`.
 
 ## Installation
 
@@ -49,6 +51,7 @@ Renseigner dans `.env` :
 - `GUILD_ID` : ID du serveur Cage & Key.
 - `VALIDATION_CHANNEL_ID` : ID du canal `#validation`.
 - `LOG_CHANNEL_ID` : canal de journalisation (facultatif mais recommandé).
+- `RULES_CHANNEL_ID` : ID du salon contenant le règlement. Facultatif si le salon s’appelle `règlement`, `rules` ou `regels`, mais recommandé.
 - `FR_CATEGORY_ID`, `NL_CATEGORY_ID`, `EN_CATEGORY_ID` : catégories linguistiques.
 - `MODERATOR_ROLE_ID`, `ADMIN_ROLE_ID`, `OWNER_ROLE_ID` : IDs des rôles staff existants (recommandé).
 

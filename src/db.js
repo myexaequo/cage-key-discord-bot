@@ -61,6 +61,22 @@ CREATE TABLE IF NOT EXISTS audit_log (
 ) STRICT;
 
 
+CREATE TABLE IF NOT EXISTS rules_acceptance (
+  guild_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  accepted_at TEXT NOT NULL,
+  revoked_at TEXT,
+  PRIMARY KEY (guild_id, user_id)
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS bot_settings (
+  guild_id TEXT NOT NULL,
+  setting_key TEXT NOT NULL,
+  setting_value TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (guild_id, setting_key)
+) STRICT;
+
 CREATE TABLE IF NOT EXISTS role_mappings (
   guild_id TEXT NOT NULL,
   mapping_key TEXT NOT NULL,
@@ -205,6 +221,50 @@ export function setRoleMapping(guildId, mappingKey, roleId, canonicalName) {
 
 export function listRoleMappings(guildId) {
   return db.prepare('SELECT * FROM role_mappings WHERE guild_id = ? ORDER BY mapping_key ASC').all(guildId);
+}
+
+export function setRulesAccepted(guildId, userId) {
+  const ts = now();
+  db.prepare(`
+    INSERT INTO rules_acceptance (guild_id, user_id, accepted_at, revoked_at)
+    VALUES (?, ?, ?, NULL)
+    ON CONFLICT(guild_id, user_id) DO UPDATE SET
+      accepted_at = excluded.accepted_at,
+      revoked_at = NULL
+  `).run(guildId, userId, ts);
+  return getRulesAcceptance(guildId, userId);
+}
+
+export function revokeRulesAcceptance(guildId, userId) {
+  const ts = now();
+  db.prepare(`
+    INSERT INTO rules_acceptance (guild_id, user_id, accepted_at, revoked_at)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(guild_id, user_id) DO UPDATE SET
+      revoked_at = excluded.revoked_at
+  `).run(guildId, userId, ts, ts);
+  return getRulesAcceptance(guildId, userId);
+}
+
+export function getRulesAcceptance(guildId, userId) {
+  return db.prepare('SELECT * FROM rules_acceptance WHERE guild_id = ? AND user_id = ?')
+    .get(guildId, userId) ?? null;
+}
+
+export function setBotSetting(guildId, key, value) {
+  const ts = now();
+  db.prepare(`
+    INSERT INTO bot_settings (guild_id, setting_key, setting_value, updated_at)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(guild_id, setting_key) DO UPDATE SET
+      setting_value = excluded.setting_value,
+      updated_at = excluded.updated_at
+  `).run(guildId, key, String(value), ts);
+}
+
+export function getBotSetting(guildId, key) {
+  return db.prepare('SELECT setting_value FROM bot_settings WHERE guild_id = ? AND setting_key = ?')
+    .get(guildId, key)?.setting_value ?? null;
 }
 
 export { db };

@@ -13,7 +13,7 @@ import { getApplication, upsertApplication, deleteApplication, saveProfileFromAp
 import { isValidChoice, isValidMultiChoice, nextStage } from './questions.js';
 import { t } from './i18n.js';
 import { welcomePayload, languageScreen, stagePayload, summaryPayload, validationPayload, profileEmbed, acceptedPayload } from './ui.js';
-import { assignPending, approveMember, isStaff } from './roles.js';
+import { assignPending, approveMember, hasRulesChecked, isStaff } from './roles.js';
 import { sendLog } from './logging.js';
 
 function ephemeralReply(interaction, payload) {
@@ -38,6 +38,15 @@ export async function startOnboarding(interaction, roles) {
   await interaction.deferReply({ ephemeral: true });
 
   const member = interaction.member;
+  if (!hasRulesChecked(member, roles)) {
+    return ephemeralReply(interaction, {
+      content: [
+        '📜 **FR** — Lis le règlement et clique sur 👍 sous le message **Rules Checked** avant de lancer `/start`.',
+        '📜 **NL** — Lees de regels en klik op 👍 onder het bericht **Rules Checked** voordat je `/start` gebruikt.',
+        '📜 **EN** — Read the rules and click 👍 under the **Rules Checked** message before using `/start`.'
+      ].join('\n')
+    });
+  }
   const existingProfile = getProfile(config.guildId, interaction.user.id);
   if (existingProfile) return ephemeralReply(interaction, { content: 'Ton profil est déjà validé. Utilise /profil pour le consulter.' });
   await assignPending(member, roles).catch(() => {});
@@ -86,7 +95,7 @@ async function advance(interaction, field, value, multi = false) {
   return showCurrent(interaction, updated);
 }
 
-export async function handleOnboardingInteraction(interaction) {
+export async function handleOnboardingInteraction(interaction, roles) {
   if (interaction.isButton() && interaction.customId.startsWith('onboard:lang:')) {
     const lang = interaction.customId.split(':')[2];
     if (!isValidChoice('language', lang)) return;
@@ -107,11 +116,16 @@ export async function handleOnboardingInteraction(interaction) {
   }
 
   if (interaction.isButton() && interaction.customId === 'onboard:submit') {
+    if (!hasRulesChecked(interaction.member, roles)) {
+      return ephemeralReply(interaction, {
+        content: '📜 Ton acceptation du règlement n’est plus active. Remets 👍 sur le message **Rules Checked** avant d’envoyer ton profil.'
+      });
+    }
     const app = getApplication(config.guildId, interaction.user.id);
     if (!app || app.stage !== 'summary' || app.status !== 'draft') return ephemeralReply(interaction, { content: 'Demande invalide ou déjà envoyée.' });
     const channel = interaction.client.channels.cache.get(config.validationChannelId) ?? await interaction.client.channels.fetch(config.validationChannelId);
     if (!channel?.isTextBased()) return ephemeralReply(interaction, { content: 'Le canal #validation est mal configuré.' });
-    const message = await channel.send(validationPayload(interaction.user, app));
+    const message = await channel.send(validationPayload(interaction.user, app, true));
     upsertApplication(config.guildId, interaction.user.id, { status: 'submitted', validationMessageId: message.id });
     audit(config.guildId, 'application_submitted', { userId: interaction.user.id });
     return interaction.update({ content: t(app.language).pending, embeds: [], components: [] });
@@ -184,6 +198,13 @@ export async function handleValidationButton(interaction, roles) {
     }
     if (!member) {
       return interaction.followUp({ content: 'Le membre n’est plus sur le serveur.', ephemeral: true });
+    }
+
+    if (!hasRulesChecked(member, roles)) {
+      return interaction.followUp({
+        content: 'Impossible de valider ce profil : le membre n’a plus le rôle **Rules Checked**. Il doit accepter à nouveau le règlement avec 👍.',
+        ephemeral: true
+      });
     }
 
     try {

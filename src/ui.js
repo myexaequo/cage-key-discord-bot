@@ -100,7 +100,7 @@ export function summaryPayload(user, application) {
   return { embeds: [embed], components: [row] };
 }
 
-export function validationPayload(user, application) {
+export function validationPayload(user, application, rulesAccepted = false) {
   const d = application.data;
   const profile = {
     language: application.language, server_languages: d.server_languages ?? [application.language], age: d.age, orientation: d.orientation, gender: d.gender,
@@ -108,7 +108,8 @@ export function validationPayload(user, application) {
   };
   const embed = profileEmbed(user, profile, 'fr')
     .setTitle(`Nouvelle demande — ${user.username}`)
-    .setDescription(`Utilisateur : <@${user.id}>\nID : \`${user.id}\``);
+    .setDescription(`Utilisateur : <@${user.id}>\nID : \`${user.id}\``)
+    .addFields({ name: '📜 Rules Checked', value: rulesAccepted ? '✅ Oui' : '❌ Non', inline: true });
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(`validation:accept:${user.id}`).setLabel('Accepter').setEmoji('✅').setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId(`validation:reject:${user.id}`).setLabel('Refuser').setEmoji('❌').setStyle(ButtonStyle.Danger),

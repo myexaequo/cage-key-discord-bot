@@ -12,6 +12,7 @@ export const config = {
   guildId: env('GUILD_ID', { required: true }),
   validationChannelId: env('VALIDATION_CHANNEL_ID', { required: true }),
   logChannelId: env('LOG_CHANNEL_ID'),
+  rulesChannelId: env('RULES_CHANNEL_ID'),
   categories: {
     fr: env('FR_CATEGORY_ID', { required: true }),
     nl: env('NL_CATEGORY_ID', { required: true }),
