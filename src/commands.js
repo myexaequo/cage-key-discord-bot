@@ -8,6 +8,9 @@ export const commands = [
     .setName('profil')
     .setDescription('Afficher un profil Cage & Key')
     .addUserOption((opt) => opt.setName('membre').setDescription('Membre à afficher').setRequired(false)),
+  new SlashCommandBuilder()
+    .setName('updateprofile')
+    .setDescription('Modifier ton profil Cage & Key'),
   new ContextMenuCommandBuilder()
     .setName('Profil Cage & Key')
     .setType(ApplicationCommandType.User)
