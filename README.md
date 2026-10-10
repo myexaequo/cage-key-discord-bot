@@ -22,7 +22,9 @@ Bot Discord pour l’accueil, le questionnaire d’admission, la validation huma
 - Rôles `Propriétaire`, `Administrateur` et `Modérateur` laissés à Discord.
 - SQLite local persistant dans `DATA_DIR`.
 - L’onboarding ne s’ouvre plus en message privé à l’arrivée. `/start` lance/reprend le formulaire dans une réponse éphémère à l’intérieur du serveur.
-- `/profil [membre]` pour afficher un profil validé (réservé aux membres validés et au staff).
+- `/profil [membre]` pour afficher un profil validé (réservé aux membres validés et au staff, réponse privée/éphémère).
+- `/updateprofile` pour modifier son profil validé. Les changements sont appliqués automatiquement et les rôles sont synchronisés sans validation modérateur.
+- La validation staff reste obligatoire uniquement pour la première inscription via `/start`.
 - `/health` pour l’hébergement en container.
 
 ## Pré-requis
