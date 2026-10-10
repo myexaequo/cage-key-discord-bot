@@ -157,7 +157,7 @@ export async function approveMember(member, roles, application) {
 
 export async function checkConfiguration(guild, roles) {
   const me = guild.members.me;
-  const required = [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ReadMessageHistory];
+  const required = [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AddReactions];
   const missing = required.filter((p) => !me.permissions.has(p));
   if (missing.length) console.warn(`[setup] permissions bot manquantes: ${missing.map(String).join(', ')}`);
 
