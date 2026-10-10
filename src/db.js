@@ -157,6 +157,43 @@ export function saveProfileFromApplication(application, approvedBy) {
   return getProfile(application.guild_id, application.user_id);
 }
 
+export function updateProfileFromApplication(application) {
+  const existing = getProfile(application.guild_id, application.user_id);
+  if (!existing) return null;
+
+  const d = application.data;
+  const ts = now();
+  db.prepare(`
+    UPDATE profiles SET
+      language = ?,
+      age_band = ?,
+      orientation = ?,
+      gender = ?,
+      chastity_role = ?,
+      devices_json = ?,
+      keys_json = ?,
+      kinks_json = ?,
+      server_languages_json = ?,
+      updated_at = ?
+    WHERE guild_id = ? AND user_id = ?
+  `).run(
+    application.language,
+    d.age,
+    d.orientation,
+    d.gender,
+    d.role,
+    JSON.stringify(d.devices),
+    JSON.stringify(d.keys),
+    JSON.stringify(d.kinks),
+    JSON.stringify(d.server_languages ?? [application.language]),
+    ts,
+    application.guild_id,
+    application.user_id
+  );
+
+  return getProfile(application.guild_id, application.user_id);
+}
+
 export function getProfile(guildId, userId) {
   const row = db.prepare('SELECT * FROM profiles WHERE guild_id = ? AND user_id = ?').get(guildId, userId);
   if (!row) return null;
