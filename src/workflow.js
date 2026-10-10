@@ -62,7 +62,7 @@ export async function startOnboarding(interaction, roles) {
 export async function startProfileUpdate(interaction, roles) {
   if (!interaction.guild || interaction.guild.id !== config.guildId) return;
 
-  await interaction.deferReply({ ephemeral: true });
+  console.log(`[profile:update] /updateprofile demandé par ${interaction.user.tag} (${interaction.user.id})`);
 
   if (!hasRulesChecked(interaction.member, roles)) {
     return ephemeralReply(interaction, { content: 'Tu dois d’abord accepter le règlement avec 👍 dans #rules.' });
@@ -98,7 +98,18 @@ export async function startProfileUpdate(interaction, roles) {
   });
 
   audit(config.guildId, 'profile_update_started', { userId: interaction.user.id });
-  return ephemeralReply(interaction, updateProfileDashboard(interaction.user, app));
+
+  try {
+    const payload = updateProfileDashboard(interaction.user, app);
+    console.log(`[profile:update] tableau de bord prêt pour ${interaction.user.tag}`);
+    return interaction.reply({ ...payload, ephemeral: true });
+  } catch (error) {
+    console.error('[profile:update] impossible de construire le tableau de bord', error);
+    return interaction.reply({
+      content: 'Impossible d’ouvrir la modification du profil. Réessaie ou contacte un modérateur.',
+      ephemeral: true
+    }).catch(() => {});
+  }
 }
 
 export async function handleProfileUpdateInteraction(interaction, roles) {
