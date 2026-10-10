@@ -8,6 +8,7 @@ import { registerCommands } from './register-commands.js';
 import {
   prepareWelcomeMember,
   startOnboarding,
+  startProfileUpdate,
   handleOnboardingInteraction,
   handleProfileCommand,
   handleProfileContextMenu,
@@ -81,6 +82,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isChatInputCommand()) {
       if (interaction.commandName === 'start') return startOnboarding(interaction, roles);
       if (interaction.commandName === 'profil') return handleProfileCommand(interaction);
+      if (interaction.commandName === 'updateprofile') return startProfileUpdate(interaction, roles);
     }
 
     if (interaction.isUserContextMenuCommand() && interaction.commandName === 'Profil Cage & Key') {
