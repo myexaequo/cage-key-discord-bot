@@ -145,7 +145,7 @@ export async function handleProfileUpdateInteraction(interaction, roles) {
         stage: 'update_menu',
         data: app.data
       });
-      return interaction.update(updateProfileDashboard(interaction.user, updated));
+      return interaction.update(updateProfileSectionPayload('languages', updated));
     }
 
     if (multi ? !isValidMultiChoice(field, value) : !isValidChoice(field, value)) {
@@ -157,6 +157,9 @@ export async function handleProfileUpdateInteraction(interaction, roles) {
       stage: 'update_menu',
       data
     });
+    if (field === 'server_languages') {
+      return interaction.update(updateProfileSectionPayload('languages', updated));
+    }
     return interaction.update(updateProfileDashboard(interaction.user, updated));
   }
 
