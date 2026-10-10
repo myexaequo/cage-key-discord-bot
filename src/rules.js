@@ -62,21 +62,20 @@ export async function ensureRulesMessage(guild, roles) {
     message = await channel.messages.fetch(storedMessageId).catch(() => null);
   }
 
+  let reaction = null;
   if (!message) {
     message = await channel.send(rulesMessagePayload());
-    await message.react(ACCEPT_EMOJI);
+    reaction = await message.react(ACCEPT_EMOJI);
     setBotSetting(guild.id, RULES_MESSAGE_KEY, message.id);
     setBotSetting(guild.id, RULES_CHANNEL_KEY, channel.id);
     console.log(`[rules] message d’acceptation publié dans #${channel.name} (${message.id})`);
   } else {
-    const reaction = message.reactions.resolve(ACCEPT_EMOJI);
-    if (!reaction) await message.react(ACCEPT_EMOJI).catch(() => {});
+    reaction = message.reactions.resolve(ACCEPT_EMOJI);
+    if (!reaction) reaction = await message.react(ACCEPT_EMOJI).catch(() => null);
     console.log(`[rules] message d’acceptation retrouvé dans #${channel.name} (${message.id})`);
   }
 
   // Synchronise les personnes ayant déjà réagi, utile après redémarrage ou migration.
-  const reaction = message.reactions.resolve(ACCEPT_EMOJI)
-    ?? await message.reactions.fetch(ACCEPT_EMOJI).catch(() => null);
   if (reaction) {
     const users = await reaction.users.fetch().catch(() => null);
     if (users) {
