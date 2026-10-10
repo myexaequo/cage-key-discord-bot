@@ -99,6 +99,10 @@ export async function ensureRoles(guild) {
   return roles;
 }
 
+export function hasRulesChecked(member, roles) {
+  return Boolean(member && roles?.rulesChecked && member.roles.cache.has(roles.rulesChecked.id));
+}
+
 export function isStaff(member) {
   if (!member) return false;
   if (member.permissions.has(PermissionFlagsBits.Administrator)) return true;
