@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS applications (
   data_json TEXT NOT NULL DEFAULT '{}',
   status TEXT NOT NULL DEFAULT 'draft',
   validation_message_id TEXT,
+  mode TEXT NOT NULL DEFAULT 'onboarding',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   PRIMARY KEY (guild_id, user_id)
@@ -87,6 +88,11 @@ CREATE TABLE IF NOT EXISTS role_mappings (
 ) STRICT;
 `);
 
+const applicationColumns = db.prepare('PRAGMA table_info(applications)').all().map((column) => column.name);
+if (!applicationColumns.includes('mode')) {
+  db.exec("ALTER TABLE applications ADD COLUMN mode TEXT NOT NULL DEFAULT 'onboarding';");
+}
+
 const profileColumns = db.prepare('PRAGMA table_info(profiles)').all().map((column) => column.name);
 if (!profileColumns.includes('server_languages_json')) {
   db.exec("ALTER TABLE profiles ADD COLUMN server_languages_json TEXT NOT NULL DEFAULT '[]';");
@@ -111,17 +117,19 @@ export function upsertApplication(guildId, userId, patch = {}) {
     language: patch.language ?? existing?.language ?? null,
     status: patch.status ?? existing?.status ?? 'draft',
     validationMessageId: patch.validationMessageId ?? existing?.validation_message_id ?? null,
+    mode: patch.mode ?? existing?.mode ?? 'onboarding',
     dataJson: JSON.stringify(data),
     createdAt: existing?.created_at ?? now(),
     updatedAt: now()
   };
   db.prepare(`
-    INSERT INTO applications (guild_id,user_id,stage,language,data_json,status,validation_message_id,created_at,updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?)
+    INSERT INTO applications (guild_id,user_id,stage,language,data_json,status,validation_message_id,mode,created_at,updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?)
     ON CONFLICT(guild_id,user_id) DO UPDATE SET
       stage=excluded.stage, language=excluded.language, data_json=excluded.data_json,
-      status=excluded.status, validation_message_id=excluded.validation_message_id, updated_at=excluded.updated_at
-  `).run(guildId,userId,record.stage,record.language,record.dataJson,record.status,record.validationMessageId,record.createdAt,record.updatedAt);
+      status=excluded.status, validation_message_id=excluded.validation_message_id,
+      mode=excluded.mode, updated_at=excluded.updated_at
+  `).run(guildId,userId,record.stage,record.language,record.dataJson,record.status,record.validationMessageId,record.mode,record.createdAt,record.updatedAt);
   return getApplication(guildId, userId);
 }
 
