@@ -138,7 +138,7 @@ export async function handleProfileCommand(interaction) {
   const target = interaction.options.getUser('membre') ?? interaction.user;
   const profile = getProfile(config.guildId, target.id);
   if (!profile) return ephemeralReply(interaction, { content: t('fr').profileNotFound });
-  return interaction.reply({ embeds: [profileEmbed(target, profile, profile.language)] });
+  return interaction.reply({ embeds: [profileEmbed(target, profile, profile.language)], ephemeral: true });
 }
 
 export async function handleProfileContextMenu(interaction) {
