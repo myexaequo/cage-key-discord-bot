@@ -94,7 +94,7 @@ export function updateProfileDashboard(user, application) {
     new ButtonBuilder().setCustomId('update:section:languages').setLabel('Langues').setEmoji('🌐').setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId('update:section:age').setLabel('Âge').setEmoji('🎂').setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId('update:section:orientation').setLabel('Orientation').setEmoji('🩷').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('update:section:gender').setLabel('Genre').setEmoji('⚧️').setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId('update:section:gender').setLabel('Genre').setEmoji('👤').setStyle(ButtonStyle.Secondary)
   );
 
   const row2 = new ActionRowBuilder().addComponents(
