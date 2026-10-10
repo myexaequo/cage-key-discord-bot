@@ -9,6 +9,7 @@ import {
   prepareWelcomeMember,
   startOnboarding,
   startProfileUpdate,
+  handleProfileUpdateInteraction,
   handleOnboardingInteraction,
   handleProfileCommand,
   handleProfileContextMenu,
@@ -87,6 +88,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     if (interaction.isUserContextMenuCommand() && interaction.commandName === 'Profil Cage & Key') {
       return handleProfileContextMenu(interaction);
+    }
+
+    if ((interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith('update:')) {
+      return handleProfileUpdateInteraction(interaction, roles);
     }
 
     if ((interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith('onboard:')) {
