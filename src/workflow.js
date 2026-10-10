@@ -9,7 +9,7 @@ import {
   TextInputStyle
 } from 'discord.js';
 import { config } from './config.js';
-import { getApplication, upsertApplication, deleteApplication, saveProfileFromApplication, getProfile, audit, createClarification, getClarification, answerClarification } from './db.js';
+import { getApplication, upsertApplication, deleteApplication, saveProfileFromApplication, updateProfileFromApplication, getProfile, audit, createClarification, getClarification, answerClarification } from './db.js';
 import { isValidChoice, isValidMultiChoice, nextStage } from './questions.js';
 import { t } from './i18n.js';
 import { welcomePayload, languageScreen, stagePayload, summaryPayload, validationPayload, profileEmbed, acceptedPayload } from './ui.js';
@@ -75,7 +75,7 @@ export async function startProfileUpdate(interaction, roles) {
 
   const existing = getApplication(config.guildId, interaction.user.id);
   if (existing?.status === 'submitted') {
-    return ephemeralReply(interaction, { content: 'Une modification de profil est déjà en attente de validation.' });
+    deleteApplication(config.guildId, interaction.user.id);
   }
 
   const data = {
@@ -168,11 +168,35 @@ export async function handleOnboardingInteraction(interaction, roles) {
     }
     const app = getApplication(config.guildId, interaction.user.id);
     if (!app || app.stage !== 'summary' || app.status !== 'draft') return ephemeralReply(interaction, { content: 'Demande invalide ou déjà envoyée.' });
+
+    if (app.mode === 'update') {
+      await interaction.deferUpdate();
+      try {
+        await updateMemberProfileRoles(interaction.member, roles, app);
+        updateProfileFromApplication(app);
+        audit(config.guildId, 'profile_update_applied', { userId: interaction.user.id, actorId: interaction.user.id });
+        deleteApplication(config.guildId, interaction.user.id);
+        await sendLog(interaction.client, `✏️ <@${interaction.user.id}> a mis à jour son profil automatiquement.`);
+        return interaction.editReply({
+          content: '✅ Ton profil a été mis à jour automatiquement.',
+          embeds: [],
+          components: []
+        });
+      } catch (error) {
+        console.error('[profile:update]', error);
+        return interaction.editReply({
+          content: 'Impossible de mettre à jour ton profil pour le moment. Réessaie ou contacte un modérateur.',
+          embeds: [],
+          components: []
+        });
+      }
+    }
+
     const channel = interaction.client.channels.cache.get(config.validationChannelId) ?? await interaction.client.channels.fetch(config.validationChannelId);
     if (!channel?.isTextBased()) return ephemeralReply(interaction, { content: 'Le canal #validation est mal configuré.' });
     const message = await channel.send(validationPayload(interaction.user, app, true));
     upsertApplication(config.guildId, interaction.user.id, { status: 'submitted', validationMessageId: message.id });
-    audit(config.guildId, app.mode === 'update' ? 'profile_update_submitted' : 'application_submitted', { userId: interaction.user.id });
+    audit(config.guildId, 'application_submitted', { userId: interaction.user.id });
     return interaction.update({ content: t(app.language).pending, embeds: [], components: [] });
   }
 }
