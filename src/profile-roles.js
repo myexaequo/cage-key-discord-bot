@@ -333,3 +333,17 @@ export function profileRoleDisplayName(canonicalName) {
   const emoji = PROFILE_ROLE_EMOJIS[canonicalName];
   return emoji ? `${emoji} ${canonicalName}` : canonicalName;
 }
+
+export function profileRoleEmoji(canonicalName) {
+  const value = PROFILE_ROLE_EMOJIS[canonicalName];
+  if (!value) return '';
+  return value.split(' ')[0];
+}
+
+export function profileOptionDisplayName(lang, group, code) {
+  const map = PROFILE_ROLE_NAMES[lang] ?? PROFILE_ROLE_NAMES.fr;
+  const canonicalName = map[group]?.[code];
+  if (!canonicalName) return null;
+  const emoji = profileRoleEmoji(canonicalName);
+  return emoji ? `${emoji} ${canonicalName}` : canonicalName;
+}
