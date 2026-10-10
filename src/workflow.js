@@ -114,8 +114,25 @@ export async function prepareWelcomeMember(member, roles) {
 }
 
 async function underageFlow(interaction) {
-  const lang = getApplication(config.guildId, interaction.user.id)?.language ?? 'fr';
+  const app = getApplication(config.guildId, interaction.user.id);
+  const lang = app?.language ?? 'fr';
   const message = t(lang).under18;
+
+  if (app?.mode === 'update') {
+    audit(config.guildId, 'profile_update_under18_blocked', {
+      userId: interaction.user.id,
+      details: { reason: 'Âge inférieur à 18 ans sélectionné pendant une mise à jour de profil' }
+    });
+    deleteApplication(config.guildId, interaction.user.id);
+    await interaction.update({
+      content: '⚠️ Cette valeur n’est pas compatible avec un profil membre déjà validé. La modification a été annulée et ton profil actuel reste inchangé. Relance `/updateprofile` pour recommencer.',
+      embeds: [],
+      components: []
+    }).catch(() => {});
+    await sendLog(interaction.client, `⚠️ <@${interaction.user.id}> a sélectionné -18 pendant /updateprofile. Mise à jour annulée, profil existant conservé.`);
+    return;
+  }
+
   deleteApplication(config.guildId, interaction.user.id);
   audit(config.guildId, 'under18_kicked', { userId: interaction.user.id, details: { reason: 'Âge déclaré inférieur à 18 ans' } });
   await interaction.update({ content: message, embeds: [], components: [] }).catch(() => {});
