@@ -13,7 +13,7 @@ import { getApplication, upsertApplication, deleteApplication, saveProfileFromAp
 import { isValidChoice, isValidMultiChoice, nextStage } from './questions.js';
 import { t } from './i18n.js';
 import { welcomePayload, languageScreen, stagePayload, summaryPayload, validationPayload, profileEmbed, acceptedPayload } from './ui.js';
-import { assignPending, approveMember, hasRulesChecked, isStaff } from './roles.js';
+import { assignPending, approveMember, updateMemberProfileRoles, hasRulesChecked, isStaff } from './roles.js';
 import { sendLog } from './logging.js';
 
 function ephemeralReply(interaction, payload) {
@@ -57,6 +57,51 @@ export async function startOnboarding(interaction, roles) {
   if (!app) app = upsertApplication(config.guildId, interaction.user.id, { stage: 'language', status: 'draft', data: {} });
   if (app.stage === 'language') return ephemeralReply(interaction, welcomePayload());
   return showCurrent(interaction, app);
+}
+
+export async function startProfileUpdate(interaction, roles) {
+  if (!interaction.guild || interaction.guild.id !== config.guildId) return;
+
+  await interaction.deferReply({ ephemeral: true });
+
+  if (!hasRulesChecked(interaction.member, roles)) {
+    return ephemeralReply(interaction, { content: 'Tu dois d’abord accepter le règlement avec 👍 dans #rules.' });
+  }
+
+  const profile = getProfile(config.guildId, interaction.user.id);
+  if (!profile) {
+    return ephemeralReply(interaction, { content: 'Aucun profil validé à modifier. Utilise /start pour créer ton profil.' });
+  }
+
+  const existing = getApplication(config.guildId, interaction.user.id);
+  if (existing?.status === 'submitted') {
+    return ephemeralReply(interaction, { content: 'Une modification de profil est déjà en attente de validation.' });
+  }
+
+  const data = {
+    server_languages: profile.server_languages ?? [profile.language],
+    age: profile.age_band,
+    orientation: profile.orientation,
+    gender: profile.gender,
+    role: profile.chastity_role,
+    devices: profile.devices ?? [],
+    keys: profile.keys ?? [],
+    kinks: profile.kinks ?? []
+  };
+
+  upsertApplication(config.guildId, interaction.user.id, {
+    stage: 'language',
+    language: profile.language,
+    status: 'draft',
+    mode: 'update',
+    data
+  });
+
+  audit(config.guildId, 'profile_update_started', { userId: interaction.user.id });
+  return ephemeralReply(interaction, {
+    content: '✏️ Modification de ton profil. Tes réponses actuelles ont été chargées ; parcours le questionnaire et modifie ce que tu souhaites.',
+    ...languageScreen()
+  });
 }
 
 export async function prepareWelcomeMember(member, roles) {
@@ -127,7 +172,7 @@ export async function handleOnboardingInteraction(interaction, roles) {
     if (!channel?.isTextBased()) return ephemeralReply(interaction, { content: 'Le canal #validation est mal configuré.' });
     const message = await channel.send(validationPayload(interaction.user, app, true));
     upsertApplication(config.guildId, interaction.user.id, { status: 'submitted', validationMessageId: message.id });
-    audit(config.guildId, 'application_submitted', { userId: interaction.user.id });
+    audit(config.guildId, app.mode === 'update' ? 'profile_update_submitted' : 'application_submitted', { userId: interaction.user.id });
     return interaction.update({ content: t(app.language).pending, embeds: [], components: [] });
   }
 }
@@ -208,7 +253,8 @@ export async function handleValidationButton(interaction, roles) {
     }
 
     try {
-      await approveMember(member, roles, app);
+      if (app.mode === 'update') await updateMemberProfileRoles(member, roles, app);
+      else await approveMember(member, roles, app);
     } catch (error) {
       console.error('[validation:accept] attribution des rôles impossible', error);
       return interaction.followUp({
@@ -218,11 +264,17 @@ export async function handleValidationButton(interaction, roles) {
     }
 
     saveProfileFromApplication(app, interaction.user.id);
-    audit(config.guildId, 'application_approved', { userId, actorId: interaction.user.id });
-    await interaction.editReply({ content: `✅ Accepté par <@${interaction.user.id}>`, embeds: interaction.message.embeds, components: [] });
-    await member.send(acceptedPayload(app.language)).catch(() => {});
+    audit(config.guildId, app.mode === 'update' ? 'profile_update_approved' : 'application_approved', { userId, actorId: interaction.user.id });
+    await interaction.editReply({ content: app.mode === 'update' ? `✅ Modification de profil validée par <@${interaction.user.id}>` : `✅ Accepté par <@${interaction.user.id}>`, embeds: interaction.message.embeds, components: [] });
+    if (app.mode === 'update') {
+      await member.send('✅ Ta modification de profil Cage & Key a été validée.').catch(() => {});
+    } else {
+      await member.send(acceptedPayload(app.language)).catch(() => {});
+    }
     deleteApplication(config.guildId, userId);
-    await sendLog(interaction.client, `✅ <@${userId}> accepté par <@${interaction.user.id}>.`);
+    await sendLog(interaction.client, app.mode === 'update'
+      ? `✏️ Profil de <@${userId}> mis à jour et validé par <@${interaction.user.id}>.`
+      : `✅ <@${userId}> accepté par <@${interaction.user.id}>.`);
     return;
   }
 }
@@ -234,11 +286,15 @@ export async function handleModeratorModal(interaction) {
     const reason = interaction.fields.getTextInputValue('reason').trim();
     const { app, member } = await fetchApplicationMember(interaction, userId);
     if (!app || app.status !== 'submitted') return ephemeralReply(interaction, { content: 'Cette demande n’est plus active.' });
-    audit(config.guildId, 'application_rejected', { userId, actorId: interaction.user.id, details: { reason } });
+    audit(config.guildId, app.mode === 'update' ? 'profile_update_rejected' : 'application_rejected', { userId, actorId: interaction.user.id, details: { reason } });
     if (member) {
-      const lang = app.language ?? 'fr';
-      await member.send(`${t(lang).rejected}\n\n${reason}`).catch(() => {});
-      if (member.kickable) await member.kick(`Demande refusée: ${reason.slice(0, 400)}`).catch(() => {});
+      if (app.mode === 'update') {
+        await member.send(`❌ Ta modification de profil Cage & Key a été refusée.\n\n${reason}\n\nTon profil actuel reste inchangé.`).catch(() => {});
+      } else {
+        const lang = app.language ?? 'fr';
+        await member.send(`${t(lang).rejected}\n\n${reason}`).catch(() => {});
+        if (member.kickable) await member.kick(`Demande refusée: ${reason.slice(0, 400)}`).catch(() => {});
+      }
     }
     if (app.validation_message_id) {
       const channel = await interaction.client.channels.fetch(config.validationChannelId).catch(() => null);
@@ -246,8 +302,13 @@ export async function handleModeratorModal(interaction) {
       if (message) await message.edit({ content: `❌ Refusé par <@${interaction.user.id}> — ${reason}`, components: [] });
     }
     deleteApplication(config.guildId, userId);
-    await sendLog(interaction.client, `❌ <@${userId}> refusé par <@${interaction.user.id}> — ${reason}`);
-    return interaction.reply({ content: 'Demande refusée et membre retiré du serveur.', ephemeral: true });
+    await sendLog(interaction.client, app.mode === 'update'
+      ? `❌ Modification du profil de <@${userId}> refusée par <@${interaction.user.id}> — ${reason}`
+      : `❌ <@${userId}> refusé par <@${interaction.user.id}> — ${reason}`);
+    return interaction.reply({
+      content: app.mode === 'update' ? 'Modification refusée. Le profil actuel du membre reste inchangé.' : 'Demande refusée et membre retiré du serveur.',
+      ephemeral: true
+    });
   }
 
   if (interaction.customId.startsWith('clarify_modal:')) {

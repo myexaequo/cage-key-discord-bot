@@ -124,7 +124,7 @@ export function validationPayload(user, application, rulesAccepted = false) {
     role: d.role, devices: d.devices, keys: d.keys, kinks: d.kinks
   };
   const embed = profileEmbed(user, profile, 'fr')
-    .setTitle(`Nouvelle demande — ${user.username}`)
+    .setTitle(application.mode === 'update' ? `Modification de profil — ${user.username}` : `Nouvelle demande — ${user.username}`)
     .setDescription(`Utilisateur : <@${user.id}>\nID : \`${user.id}\``)
     .addFields({ name: '📜 Rules Checked', value: rulesAccepted ? '✅ Oui' : '❌ Non', inline: true });
   const row = new ActionRowBuilder().addComponents(
