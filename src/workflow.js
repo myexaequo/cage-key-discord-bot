@@ -12,7 +12,7 @@ import { config } from './config.js';
 import { getApplication, upsertApplication, deleteApplication, saveProfileFromApplication, updateProfileFromApplication, getProfile, audit, createClarification, getClarification, answerClarification } from './db.js';
 import { isValidChoice, isValidMultiChoice, nextStage } from './questions.js';
 import { t } from './i18n.js';
-import { welcomePayload, languageScreen, stagePayload, summaryPayload, validationPayload, profileEmbed, acceptedPayload } from './ui.js';
+import { welcomePayload, languageScreen, stagePayload, summaryPayload, validationPayload, profileEmbed, acceptedPayload, updateProfileDashboard, updateProfileSectionPayload } from './ui.js';
 import { assignPending, approveMember, updateMemberProfileRoles, hasRulesChecked, isStaff } from './roles.js';
 import { sendLog } from './logging.js';
 
@@ -89,8 +89,8 @@ export async function startProfileUpdate(interaction, roles) {
     kinks: profile.kinks ?? []
   };
 
-  upsertApplication(config.guildId, interaction.user.id, {
-    stage: 'language',
+  const app = upsertApplication(config.guildId, interaction.user.id, {
+    stage: 'update_menu',
     language: profile.language,
     status: 'draft',
     mode: 'update',
@@ -98,10 +98,90 @@ export async function startProfileUpdate(interaction, roles) {
   });
 
   audit(config.guildId, 'profile_update_started', { userId: interaction.user.id });
-  return ephemeralReply(interaction, {
-    content: '✏️ Modification de ton profil. Tes réponses actuelles ont été chargées ; parcours le questionnaire et modifie ce que tu souhaites.',
-    ...languageScreen()
-  });
+  return ephemeralReply(interaction, updateProfileDashboard(interaction.user, app));
+}
+
+export async function handleProfileUpdateInteraction(interaction, roles) {
+  const app = getApplication(config.guildId, interaction.user.id);
+  if (!app || app.mode !== 'update' || app.status !== 'draft') {
+    return ephemeralReply(interaction, { content: 'Aucune modification de profil active. Relance /updateprofile.' });
+  }
+
+  if (!hasRulesChecked(interaction.member, roles)) {
+    deleteApplication(config.guildId, interaction.user.id);
+    return ephemeralReply(interaction, { content: 'Ton acceptation du règlement n’est plus active. Remets 👍 dans #rules avant de modifier ton profil.' });
+  }
+
+  if (interaction.isButton() && interaction.customId.startsWith('update:section:')) {
+    const section = interaction.customId.split(':')[2];
+    return interaction.update(updateProfileSectionPayload(section, app));
+  }
+
+  if (interaction.isButton() && interaction.customId === 'update:back') {
+    return interaction.update(updateProfileDashboard(interaction.user, app));
+  }
+
+  if (interaction.isButton() && interaction.customId === 'update:cancel') {
+    deleteApplication(config.guildId, interaction.user.id);
+    audit(config.guildId, 'profile_update_cancelled', { userId: interaction.user.id, actorId: interaction.user.id });
+    return interaction.update({
+      content: '↩️ Modification annulée. Ton profil actuel reste inchangé.',
+      embeds: [],
+      components: []
+    });
+  }
+
+  if (interaction.isStringSelectMenu() && interaction.customId.startsWith('update:set:')) {
+    const field = interaction.customId.split(':')[2];
+    const multi = ['server_languages', 'devices', 'keys', 'kinks'].includes(field);
+    const value = multi ? interaction.values : interaction.values[0];
+
+    if (field === 'language') {
+      if (!isValidChoice('language', value)) {
+        return ephemeralReply(interaction, { content: 'Choix invalide.' });
+      }
+      const updated = upsertApplication(config.guildId, interaction.user.id, {
+        language: value,
+        stage: 'update_menu',
+        data: app.data
+      });
+      return interaction.update(updateProfileDashboard(interaction.user, updated));
+    }
+
+    if (multi ? !isValidMultiChoice(field, value) : !isValidChoice(field, value)) {
+      return ephemeralReply(interaction, { content: 'Choix invalide.' });
+    }
+
+    const data = { ...app.data, [field]: value };
+    const updated = upsertApplication(config.guildId, interaction.user.id, {
+      stage: 'update_menu',
+      data
+    });
+    return interaction.update(updateProfileDashboard(interaction.user, updated));
+  }
+
+  if (interaction.isButton() && interaction.customId === 'update:save') {
+    await interaction.deferUpdate();
+    try {
+      await updateMemberProfileRoles(interaction.member, roles, app);
+      updateProfileFromApplication(app);
+      audit(config.guildId, 'profile_update_applied', { userId: interaction.user.id, actorId: interaction.user.id });
+      deleteApplication(config.guildId, interaction.user.id);
+      await sendLog(interaction.client, `✏️ <@${interaction.user.id}> a mis à jour son profil automatiquement.`);
+      return interaction.editReply({
+        content: '✅ Ton profil a été mis à jour. Les informations que tu n’as pas modifiées ont été conservées.',
+        embeds: [],
+        components: []
+      });
+    } catch (error) {
+      console.error('[profile:update]', error);
+      return interaction.editReply({
+        content: 'Impossible de mettre à jour ton profil pour le moment. Réessaie ou contacte un modérateur.',
+        embeds: [],
+        components: []
+      });
+    }
+  }
 }
 
 export async function prepareWelcomeMember(member, roles) {
